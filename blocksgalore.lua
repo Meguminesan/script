@@ -1,0 +1,1487 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local existingGui = playerGui:FindFirstChild("expotalItsOnlyForMe")
+if existingGui then
+	existingGui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "expotalItsOnlyForMe"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local theme = {
+	Background = Color3.fromRGB(43, 45, 49),
+	Sidebar = Color3.fromRGB(30, 31, 34),
+	ItemBG = Color3.fromRGB(23, 24, 26),
+	ItemHover = Color3.fromRGB(64, 66, 73),
+	TabActive = Color3.fromRGB(64, 66, 73),
+	TabInactive = Color3.fromRGB(30, 31, 34),
+	TextPrimary = Color3.fromRGB(219, 222, 225),
+	TextSecondary = Color3.fromRGB(148, 155, 164),
+	Accent = Color3.fromRGB(88, 101, 242),
+	Success = Color3.fromRGB(35, 165, 89),
+	Danger = Color3.fromRGB(218, 55, 60),
+	Stroke = Color3.fromRGB(65, 68, 74),
+	Topbar = Color3.fromRGB(23, 24, 26)
+}
+
+local function applyCorner(obj, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = obj
+end
+
+local function applyStroke(obj, color, thickness)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Thickness = thickness
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = obj
+	return stroke
+end
+
+local keyFrame = Instance.new("Frame")
+keyFrame.Name = "KeyFrame"
+keyFrame.Size = UDim2.new(0, 350, 0, 200)
+keyFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+keyFrame.BackgroundColor3 = theme.Background
+keyFrame.BorderSizePixel = 0
+keyFrame.Active = true
+keyFrame.Parent = screenGui
+applyCorner(keyFrame, 12)
+applyStroke(keyFrame, theme.Stroke, 1)
+
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1, 0, 0, 40)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "Key System"
+keyTitle.TextColor3 = theme.TextPrimary
+keyTitle.Font = Enum.Font.GothamBold
+keyTitle.TextSize = 18
+keyTitle.Parent = keyFrame
+
+local keyInput = Instance.new("TextBox")
+keyInput.Size = UDim2.new(0, 280, 0, 40)
+keyInput.Position = UDim2.new(0.5, -140, 0.5, -20)
+keyInput.BackgroundColor3 = theme.ItemBG
+keyInput.TextColor3 = theme.TextPrimary
+keyInput.Font = Enum.Font.Gotham
+keyInput.TextSize = 14
+keyInput.PlaceholderText = "Enter Key..."
+keyInput.Text = ""
+keyInput.Parent = keyFrame
+applyCorner(keyInput, 8)
+applyStroke(keyInput, theme.Stroke, 1)
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 650, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -225)
+mainFrame.BackgroundColor3 = theme.Background
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+applyCorner(mainFrame, 12)
+applyStroke(mainFrame, theme.Stroke, 1)
+
+local mainScale = Instance.new("UIScale")
+mainScale.Parent = mainFrame
+mainScale.Scale = 1
+
+local floatIcon = Instance.new("ImageButton")
+floatIcon.Size = UDim2.new(0, 50, 0, 50)
+floatIcon.Position = UDim2.new(1, -70, 1, -160)
+floatIcon.BackgroundColor3 = theme.Sidebar
+floatIcon.Image = "rbxassetid://72672290893105"
+floatIcon.ImageColor3 = theme.Accent
+floatIcon.Visible = false
+floatIcon.Parent = screenGui
+applyCorner(floatIcon, 25)
+applyStroke(floatIcon, theme.Accent, 2)
+
+floatIcon.MouseButton1Click:Connect(function()
+	local twOut = TweenService:Create(floatIcon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+	twOut:Play()
+	twOut.Completed:Wait()
+	floatIcon.Visible = false
+	mainFrame.Visible = true
+	mainScale.Scale = 0
+	TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+end)
+
+local submitBtn = Instance.new("TextButton")
+submitBtn.Size = UDim2.new(0, 130, 0, 35)
+submitBtn.Position = UDim2.new(0.5, -65, 1, -50)
+submitBtn.BackgroundColor3 = theme.Accent
+submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitBtn.Font = Enum.Font.GothamBold
+submitBtn.TextSize = 14
+submitBtn.Text = "Verify"
+submitBtn.Parent = keyFrame
+applyCorner(submitBtn, 8)
+
+submitBtn.MouseButton1Click:Connect(function()
+	local encodedAuth = string.char(78, 101, 107, 111, 66, 108, 111, 99, 107, 115, 115, 115, 115, 89, 101, 101)
+	if keyInput.Text == encodedAuth then
+		keyFrame.Visible = false
+		mainFrame.Visible = true
+	else
+		keyInput.Text = "Invalid Key!"
+		task.wait(1)
+		keyInput.Text = ""
+	end
+end)
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale, 
+			startPos.X.Offset + delta.X, 
+			startPos.Y.Scale, 
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+local topbar = Instance.new("Frame")
+topbar.Size = UDim2.new(1, 0, 0, 50)
+topbar.BackgroundColor3 = theme.Topbar
+topbar.BorderSizePixel = 0
+topbar.Parent = mainFrame
+applyCorner(topbar, 12)
+
+local topbarCover = Instance.new("Frame")
+topbarCover.Size = UDim2.new(1, 0, 0, 12)
+topbarCover.Position = UDim2.new(0, 0, 1, -12)
+topbarCover.BackgroundColor3 = theme.Topbar
+topbarCover.BorderSizePixel = 0
+topbarCover.Parent = topbar
+
+local topbarBottomStroke = Instance.new("Frame")
+topbarBottomStroke.Size = UDim2.new(1, 0, 0, 1)
+topbarBottomStroke.Position = UDim2.new(0, 0, 1, 0)
+topbarBottomStroke.BackgroundColor3 = theme.Stroke
+topbarBottomStroke.BorderSizePixel = 0
+topbarBottomStroke.Parent = topbar
+
+local titleIcon = Instance.new("ImageLabel")
+titleIcon.Size = UDim2.new(0, 26, 0, 26)
+titleIcon.Position = UDim2.new(0, 15, 0.5, -13)
+titleIcon.BackgroundTransparency = 1
+titleIcon.Image = "rbxassetid://72672290893105"
+titleIcon.ImageColor3 = theme.Accent
+titleIcon.Parent = topbar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(0, 200, 0, 20)
+titleText.Position = UDim2.new(0, 55, 0, 8)
+titleText.BackgroundTransparency = 1
+titleText.Text = "NK - Blocks Galore"
+titleText.TextColor3 = theme.TextPrimary
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 16
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = topbar
+
+local subTitleText = Instance.new("TextLabel")
+subTitleText.Size = UDim2.new(0, 200, 0, 15)
+subTitleText.Position = UDim2.new(0, 55, 0, 28)
+subTitleText.BackgroundTransparency = 1
+subTitleText.Text = "Version 1.1"
+subTitleText.TextColor3 = theme.Accent
+subTitleText.Font = Enum.Font.Gotham
+subTitleText.TextSize = 12
+subTitleText.TextXAlignment = Enum.TextXAlignment.Left
+subTitleText.Parent = topbar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0.5, -15)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "X"
+closeBtn.TextColor3 = theme.TextSecondary
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.Parent = topbar
+
+closeBtn.MouseEnter:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.Danger}):Play()
+end)
+closeBtn.MouseLeave:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+end)
+closeBtn.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -75, 0.5, -15)
+minimizeBtn.BackgroundTransparency = 1
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = theme.TextSecondary
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 22
+minimizeBtn.Parent = topbar
+
+minimizeBtn.MouseEnter:Connect(function()
+	TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+end)
+minimizeBtn.MouseLeave:Connect(function()
+	TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+end)
+minimizeBtn.MouseButton1Click:Connect(function()
+	local twIn = TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
+	twIn:Play()
+	twIn.Completed:Wait()
+	mainFrame.Visible = false
+	floatIcon.Size = UDim2.new(0, 0, 0, 0)
+	floatIcon.Visible = true
+	TweenService:Create(floatIcon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 50, 0, 50)}):Play()
+end)
+
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 220, 1, -50)
+sidebar.Position = UDim2.new(0, 0, 0, 50)
+sidebar.BackgroundColor3 = theme.Sidebar
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
+applyCorner(sidebar, 12)
+
+local sidebarCoverRight = Instance.new("Frame")
+sidebarCoverRight.Size = UDim2.new(0, 12, 1, 0)
+sidebarCoverRight.Position = UDim2.new(1, -12, 0, 0)
+sidebarCoverRight.BackgroundColor3 = theme.Sidebar
+sidebarCoverRight.BorderSizePixel = 0
+sidebarCoverRight.Parent = sidebar
+
+local sidebarCoverTop = Instance.new("Frame")
+sidebarCoverTop.Size = UDim2.new(1, 0, 0, 12)
+sidebarCoverTop.Position = UDim2.new(0, 0, 0, 0)
+sidebarCoverTop.BackgroundColor3 = theme.Sidebar
+sidebarCoverTop.BorderSizePixel = 0
+sidebarCoverTop.Parent = sidebar
+
+local sidebarRightStroke = Instance.new("Frame")
+sidebarRightStroke.Size = UDim2.new(0, 1, 1, 0)
+sidebarRightStroke.Position = UDim2.new(1, 0, 0, 0)
+sidebarRightStroke.BackgroundColor3 = theme.Stroke
+sidebarRightStroke.BorderSizePixel = 0
+sidebarRightStroke.Parent = sidebar
+
+local tabContainer = Instance.new("ScrollingFrame")
+tabContainer.Size = UDim2.new(1, 0, 1, -80)
+tabContainer.Position = UDim2.new(0, 0, 0, 10)
+tabContainer.BackgroundTransparency = 1
+tabContainer.BorderSizePixel = 0
+tabContainer.ScrollBarThickness = 2
+tabContainer.ScrollBarImageColor3 = theme.ItemBG
+tabContainer.Parent = sidebar
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.Parent = tabContainer
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Padding = UDim.new(0, 8)
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local profileFrame = Instance.new("Frame")
+profileFrame.Size = UDim2.new(1, 0, 0, 70)
+profileFrame.Position = UDim2.new(0, 0, 1, -70)
+profileFrame.BackgroundColor3 = theme.ItemBG
+profileFrame.BorderSizePixel = 0
+profileFrame.Parent = sidebar
+applyCorner(profileFrame, 12)
+
+local profileTopStroke = Instance.new("Frame")
+profileTopStroke.Size = UDim2.new(1, 0, 0, 1)
+profileTopStroke.Position = UDim2.new(0, 0, 0, 0)
+profileTopStroke.BackgroundColor3 = theme.Stroke
+profileTopStroke.BorderSizePixel = 0
+profileTopStroke.Parent = profileFrame
+
+local avatarImage = Instance.new("ImageLabel")
+avatarImage.Size = UDim2.new(0, 42, 0, 42)
+avatarImage.Position = UDim2.new(0, 12, 0.5, -21)
+avatarImage.BackgroundColor3 = theme.Background
+avatarImage.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+avatarImage.Parent = profileFrame
+applyCorner(avatarImage, 21)
+applyStroke(avatarImage, theme.Stroke, 1)
+
+local nameLabel = Instance.new("TextLabel")
+nameLabel.Size = UDim2.new(0, 140, 0, 20)
+nameLabel.Position = UDim2.new(0, 65, 0, 15)
+nameLabel.BackgroundTransparency = 1
+nameLabel.Text = player.DisplayName
+nameLabel.TextColor3 = theme.TextPrimary
+nameLabel.Font = Enum.Font.GothamBold
+nameLabel.TextSize = 14
+nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+nameLabel.Parent = profileFrame
+
+local userLabel = Instance.new("TextLabel")
+userLabel.Size = UDim2.new(0, 140, 0, 15)
+userLabel.Position = UDim2.new(0, 65, 0, 38)
+userLabel.BackgroundTransparency = 1
+userLabel.Text = "@" .. player.Name
+userLabel.TextColor3 = theme.TextSecondary
+userLabel.Font = Enum.Font.Gotham
+userLabel.TextSize = 12
+userLabel.TextXAlignment = Enum.TextXAlignment.Left
+userLabel.Parent = profileFrame
+
+local contentArea = Instance.new("Frame")
+contentArea.Size = UDim2.new(1, -221, 1, -50)
+contentArea.Position = UDim2.new(0, 221, 0, 50)
+contentArea.BackgroundColor3 = theme.Background
+contentArea.BorderSizePixel = 0
+contentArea.Parent = mainFrame
+applyCorner(contentArea, 12)
+
+local contentCoverLeft = Instance.new("Frame")
+contentCoverLeft.Size = UDim2.new(0, 12, 1, 0)
+contentCoverLeft.BackgroundColor3 = theme.Background
+contentCoverLeft.BorderSizePixel = 0
+contentCoverLeft.Parent = contentArea
+
+local contentCoverTop = Instance.new("Frame")
+contentCoverTop.Size = UDim2.new(1, 0, 0, 12)
+contentCoverTop.BackgroundColor3 = theme.Background
+contentCoverTop.BorderSizePixel = 0
+contentCoverTop.Parent = contentArea
+
+local tabs = {}
+local activeTab = nil
+
+local function createTab(name, iconId)
+	local tabBtn = Instance.new("TextButton")
+	tabBtn.Size = UDim2.new(1, -24, 0, 42)
+	tabBtn.BackgroundColor3 = theme.TabInactive
+	tabBtn.Text = ""
+	tabBtn.AutoButtonColor = false
+	tabBtn.Parent = tabContainer
+	applyCorner(tabBtn, 8)
+	local tabStroke = applyStroke(tabBtn, theme.Stroke, 1)
+	
+	local icon = Instance.new("ImageLabel")
+	icon.Size = UDim2.new(0, 20, 0, 20)
+	icon.Position = UDim2.new(0, 15, 0.5, -10)
+	icon.BackgroundTransparency = 1
+	icon.Image = iconId
+	icon.ImageColor3 = theme.TextSecondary
+	icon.Parent = tabBtn
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -50, 1, 0)
+	label.Position = UDim2.new(0, 45, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name
+	label.TextColor3 = theme.TextSecondary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = tabBtn
+	
+	local activeIndicator = Instance.new("Frame")
+	activeIndicator.Size = UDim2.new(0, 4, 0, 20)
+	activeIndicator.Position = UDim2.new(0, 0, 0.5, -10)
+	activeIndicator.BackgroundColor3 = theme.Accent
+	activeIndicator.BorderSizePixel = 0
+	activeIndicator.BackgroundTransparency = 1
+	activeIndicator.Parent = tabBtn
+	applyCorner(activeIndicator, 2)
+	
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.BackgroundTransparency = 1
+	page.BorderSizePixel = 0
+	page.ScrollBarThickness = 4
+	page.ScrollBarImageColor3 = theme.ItemBG
+	page.Visible = false
+	page.Parent = contentArea
+	
+	local pageLayout = Instance.new("UIListLayout")
+	pageLayout.Parent = page
+	pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	pageLayout.Padding = UDim.new(0, 15)
+	
+	local pagePadding = Instance.new("UIPadding")
+	pagePadding.Parent = page
+	pagePadding.PaddingTop = UDim.new(0, 20)
+	pagePadding.PaddingLeft = UDim.new(0, 25)
+	pagePadding.PaddingRight = UDim.new(0, 25)
+	pagePadding.PaddingBottom = UDim.new(0, 20)
+	
+	pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		page.CanvasSize = UDim2.new(0, 0, 0, pageLayout.AbsoluteContentSize.Y + 40)
+	end)
+	
+	tabBtn.MouseEnter:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.ItemHover}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+			TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.TextPrimary}):Play()
+			TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.TextSecondary}):Play()
+		end
+	end)
+	
+	tabBtn.MouseLeave:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.Stroke}):Play()
+		end
+	end)
+	
+	tabBtn.MouseButton1Click:Connect(function()
+		if activeTab == tabBtn then return end
+		if activeTab then
+			local prevStroke = activeTab:FindFirstChildOfClass("UIStroke")
+			TweenService:Create(activeTab, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(activeTab:FindFirstChild("TextLabel"), TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(activeTab:FindFirstChild("ImageLabel"), TweenInfo.new(0.2), {ImageColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(activeTab:FindFirstChild("Frame"), TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+			if prevStroke then
+				TweenService:Create(prevStroke, TweenInfo.new(0.2), {Color = theme.Stroke}):Play()
+			end
+			tabs[activeTab].Visible = false
+		end
+		
+		activeTab = tabBtn
+		TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabActive}):Play()
+		TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+		TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.Accent}):Play()
+		TweenService:Create(activeIndicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+		TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.Accent}):Play()
+		page.Visible = true
+	end)
+	
+	tabs[tabBtn] = page
+	
+	if not activeTab then
+		activeTab = tabBtn
+		tabBtn.BackgroundColor3 = theme.TabActive
+		label.TextColor3 = theme.TextPrimary
+		icon.ImageColor3 = theme.Accent
+		activeIndicator.BackgroundTransparency = 0
+		tabStroke.Color = theme.Accent
+		page.Visible = true
+	end
+	
+	return page
+end
+
+local function createSection(page, title)
+	local sectionFrame = Instance.new("Frame")
+	sectionFrame.Size = UDim2.new(1, 0, 0, 45)
+	sectionFrame.BackgroundColor3 = theme.ItemBG
+	sectionFrame.Parent = page
+	applyCorner(sectionFrame, 8)
+	applyStroke(sectionFrame, theme.Stroke, 1)
+	
+	local headerBtn = Instance.new("TextButton")
+	headerBtn.Size = UDim2.new(1, 0, 0, 45)
+	headerBtn.BackgroundTransparency = 1
+	headerBtn.Text = ""
+	headerBtn.Parent = sectionFrame
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -30, 1, 0)
+	titleLabel.Position = UDim2.new(0, 15, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = theme.TextPrimary
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 15
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = headerBtn
+	
+	local highlightBar = Instance.new("Frame")
+	highlightBar.Size = UDim2.new(0, 4, 0, 20)
+	highlightBar.Position = UDim2.new(0, 0, 0.5, -10)
+	highlightBar.BackgroundColor3 = theme.Accent
+	highlightBar.BorderSizePixel = 0
+	highlightBar.Parent = headerBtn
+	applyCorner(highlightBar, 2)
+	
+	local chevron = Instance.new("ImageLabel")
+	chevron.Size = UDim2.new(0, 20, 0, 20)
+	chevron.Position = UDim2.new(1, -30, 0.5, -10)
+	chevron.BackgroundTransparency = 1
+	chevron.Image = "rbxassetid://130746061687765"
+	chevron.ImageColor3 = theme.TextSecondary
+	chevron.Rotation = 180
+	chevron.Parent = headerBtn
+	
+	local contentFrame = Instance.new("Frame")
+	contentFrame.Size = UDim2.new(1, 0, 0, 0)
+	contentFrame.Position = UDim2.new(0, 0, 0, 45)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.ClipsDescendants = true
+	contentFrame.Parent = sectionFrame
+	
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Parent = contentFrame
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Padding = UDim.new(0, 10)
+	
+	local contentPadding = Instance.new("UIPadding")
+	contentPadding.Parent = contentFrame
+	contentPadding.PaddingTop = UDim.new(0, 5)
+	contentPadding.PaddingLeft = UDim.new(0, 15)
+	contentPadding.PaddingRight = UDim.new(0, 15)
+	contentPadding.PaddingBottom = UDim.new(0, 15)
+	
+	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		if chevron.Rotation == 180 then
+			local newHeight = contentLayout.AbsoluteContentSize.Y + 20
+			contentFrame.Size = UDim2.new(1, 0, 0, newHeight)
+			sectionFrame.Size = UDim2.new(1, 0, 0, newHeight + 45)
+		end
+	end)
+	
+	local isOpen = true
+	headerBtn.MouseButton1Click:Connect(function()
+		isOpen = not isOpen
+		if isOpen then
+			TweenService:Create(chevron, TweenInfo.new(0.3), {Rotation = 180}):Play()
+			local newHeight = contentLayout.AbsoluteContentSize.Y + 20
+			TweenService:Create(contentFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, newHeight)}):Play()
+			TweenService:Create(sectionFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, newHeight + 45)}):Play()
+		else
+			TweenService:Create(chevron, TweenInfo.new(0.3), {Rotation = 0}):Play()
+			TweenService:Create(contentFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+			TweenService:Create(sectionFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 45)}):Play()
+		end
+	end)
+	
+	return contentFrame
+end
+
+local function createLabel(parent, text)
+	local labelContainer = Instance.new("Frame")
+	labelContainer.Size = UDim2.new(1, 0, 0, 38)
+	labelContainer.BackgroundColor3 = theme.Sidebar
+	labelContainer.Parent = parent
+	applyCorner(labelContainer, 8)
+	applyStroke(labelContainer, theme.Stroke, 1)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -20, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = theme.TextPrimary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = labelContainer
+	
+	return label
+end
+
+local function createButton(parent, text, color, callback)
+	local btnContainer = Instance.new("Frame")
+	btnContainer.Size = UDim2.new(1, 0, 0, 42)
+	btnContainer.BackgroundColor3 = theme.Sidebar
+	btnContainer.Parent = parent
+	applyCorner(btnContainer, 8)
+	
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 1, 0)
+	btn.Position = UDim2.new(0, 0, 0, 0)
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.AutoButtonColor = true
+	btn.Parent = btnContainer
+	applyCorner(btn, 8)
+	applyStroke(btn, theme.Stroke, 1)
+	
+	btn.MouseButton1Click:Connect(function()
+		if callback then callback() end
+	end)
+	return btn
+end
+
+local function createSlider(parent, text, min, max, default, callback)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, 0, 0, 65)
+	container.BackgroundColor3 = theme.Sidebar
+	container.Parent = parent
+	applyCorner(container, 8)
+	applyStroke(container, theme.Stroke, 1)
+	
+	local displayVal = default / 10
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -100, 0, 30)
+	label.Position = UDim2.new(0, 15, 0, 5)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = theme.TextPrimary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = container
+	
+	local valueLabel = Instance.new("TextLabel")
+	valueLabel.Size = UDim2.new(0, 60, 0, 30)
+	valueLabel.Position = UDim2.new(1, -75, 0, 5)
+	valueLabel.BackgroundTransparency = 1
+	valueLabel.Text = tostring(displayVal)
+	valueLabel.TextColor3 = theme.Accent
+	valueLabel.Font = Enum.Font.GothamBold
+	valueLabel.TextSize = 14
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	valueLabel.Parent = container
+	
+	local sliderBG = Instance.new("Frame")
+	sliderBG.Size = UDim2.new(1, -30, 0, 8)
+	sliderBG.Position = UDim2.new(0, 15, 0, 42)
+	sliderBG.BackgroundColor3 = theme.Background
+	sliderBG.Parent = container
+	applyCorner(sliderBG, 4)
+	applyStroke(sliderBG, theme.Stroke, 1)
+	
+	local percentage = (default - min) / (max - min)
+	
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new(percentage, 0, 1, 0)
+	fill.BackgroundColor3 = theme.Accent
+	fill.Parent = sliderBG
+	applyCorner(fill, 4)
+	
+	local knob = Instance.new("Frame")
+	knob.Size = UDim2.new(0, 18, 0, 18)
+	knob.Position = UDim2.new(1, -9, 0.5, -9)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.Parent = fill
+	applyCorner(knob, 9)
+	applyStroke(knob, theme.Stroke, 1)
+	
+	local sliderBtn = Instance.new("TextButton")
+	sliderBtn.Size = UDim2.new(1, 0, 1, 20)
+	sliderBtn.Position = UDim2.new(0, 0, 0.5, -10)
+	sliderBtn.BackgroundTransparency = 1
+	sliderBtn.Text = ""
+	sliderBtn.Parent = sliderBG
+	
+	local isSliding = false
+	
+	local function updateSlider(input)
+		local sliderSize = sliderBG.AbsoluteSize.X
+		local sliderPos = sliderBG.AbsolutePosition.X
+		local relativePos = math.clamp(input.Position.X - sliderPos, 0, sliderSize)
+		local newPercent = relativePos / sliderSize
+		
+		local newValue = math.floor(min + (max - min) * newPercent)
+		newPercent = (newValue - min) / (max - min)
+		
+		local outVal = newValue / 10
+		valueLabel.Text = tostring(outVal)
+		TweenService:Create(fill, TweenInfo.new(0.1), {Size = UDim2.new(newPercent, 0, 1, 0)}):Play()
+		
+		if callback then
+			callback(outVal)
+		end
+	end
+	
+	sliderBtn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			isSliding = true
+			updateSlider(input)
+		end
+	end)
+	
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			isSliding = false
+		end
+	end)
+	
+	UserInputService.InputChanged:Connect(function(input)
+		if isSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			updateSlider(input)
+		end
+	end)
+end
+
+local pageMining = createTab("Auto Mining", "rbxassetid://95995379265657")
+local pageTeleports = createTab("Teleports", "rbxassetid://105191031947829")
+local pageHighlights = createTab("Highlights", "rbxassetid://91865132860715")
+local pageMisc = createTab("Misc", "rbxassetid://137577418512694")
+local pageCredits = createTab("Credits", "rbxassetid://75591545109212")
+
+local secTarget = createSection(pageMining, "Target Settings")
+local targetStatusLabel = createLabel(secTarget, "Selected Target: None")
+local countStatusLabel = createLabel(secTarget, "Instances Found: 0")
+
+local listScroll = Instance.new("ScrollingFrame")
+listScroll.Size = UDim2.new(1, 0, 0, 160)
+listScroll.BackgroundColor3 = theme.Sidebar
+listScroll.BorderSizePixel = 0
+listScroll.ScrollBarThickness = 4
+listScroll.ScrollBarImageColor3 = theme.Stroke
+listScroll.Parent = secTarget
+applyCorner(listScroll, 8)
+applyStroke(listScroll, theme.Stroke, 1)
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Parent = listScroll
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 6)
+
+local listPadding = Instance.new("UIPadding")
+listPadding.Parent = listScroll
+listPadding.PaddingTop = UDim.new(0, 8)
+listPadding.PaddingLeft = UDim.new(0, 8)
+listPadding.PaddingRight = UDim.new(0, 8)
+listPadding.PaddingBottom = UDim.new(0, 8)
+
+local isMining = false
+local selectedTargets = {}
+local mineDelay = 0.5
+local rockIndex = 1
+
+local function updateStatusLabels()
+	local activeNames = {}
+	for name, _ in pairs(selectedTargets) do
+		table.insert(activeNames, name)
+	end
+	
+	if #activeNames > 0 then
+		targetStatusLabel.Text = "Selected: " .. table.concat(activeNames, ", ")
+	else
+		targetStatusLabel.Text = "Selected Target: None"
+	end
+end
+
+local function getRocks()
+	local list = {}
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if selectedTargets[obj.Name] and (obj:IsA("BasePart") or obj:IsA("Model")) then
+			table.insert(list, obj)
+		end
+	end
+	return list
+end
+
+local function applyNoCollision()
+	local rocks = getRocks()
+	countStatusLabel.Text = "Instances Found: " .. #rocks
+	for _, block in ipairs(rocks) do
+		if block:IsA("BasePart") then
+			block.CanCollide = false
+		end
+		for _, desc in ipairs(block:GetDescendants()) do
+			if desc:IsA("BasePart") then
+				desc.CanCollide = false
+			end
+		end
+	end
+end
+
+local function scanRocks()
+	for _, child in ipairs(listScroll:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	
+	local foundNames = {}
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if string.find(obj.Name, "Rock") and (obj:IsA("BasePart") or obj:IsA("Model")) then
+			if not foundNames[obj.Name] then
+				foundNames[obj.Name] = true
+				
+				local btn = Instance.new("TextButton")
+				btn.Size = UDim2.new(1, 0, 0, 35)
+				btn.BackgroundColor3 = selectedTargets[obj.Name] and theme.Accent or theme.Background
+				btn.TextColor3 = theme.TextPrimary
+				btn.Font = Enum.Font.Gotham
+				btn.TextSize = 13
+				btn.Text = obj.Name
+				btn.Parent = listScroll
+				applyCorner(btn, 6)
+				applyStroke(btn, theme.Stroke, 1)
+				
+				btn.MouseButton1Click:Connect(function()
+					if selectedTargets[obj.Name] then
+						selectedTargets[obj.Name] = nil
+						btn.BackgroundColor3 = theme.Background
+					else
+						selectedTargets[obj.Name] = true
+						btn.BackgroundColor3 = theme.Accent
+					end
+					
+					updateStatusLabels()
+					applyNoCollision()
+					rockIndex = 1
+				end)
+			end
+		end
+	end
+	listScroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
+end
+
+createButton(secTarget, "Scan Workspace for Rocks", theme.Accent, scanRocks)
+
+local secControl = createSection(pageMining, "Mining Controls")
+createSlider(secControl, "Delay (Seconds)", 1, 50, 5, function(val)
+	mineDelay = val
+end)
+
+local clickLooping = false
+local function doAutoClick()
+	if clickLooping then return end
+	clickLooping = true
+	task.spawn(function()
+		while isMining do
+			local char = player.Character
+			if char then
+				local tool = char:FindFirstChildOfClass("Tool")
+				if tool then
+					tool:Activate()
+				end
+			end
+			task.wait(0.01)
+		end
+		clickLooping = false
+	end)
+end
+
+local function enforceCollisionLoop()
+	task.spawn(function()
+		while isMining do
+			applyNoCollision()
+			task.wait(1)
+		end
+	end)
+end
+
+local function getFirstTool()
+	local firstTool = nil
+	if player.Character then
+		local charTools = player.Character:GetChildren()
+		for i = 1, #charTools do
+			if charTools[i]:IsA("Tool") then
+				firstTool = charTools[i]
+				break
+			end
+		end
+	end
+	if not firstTool then
+		local bp = player:FindFirstChild("Backpack")
+		if bp then
+			local bpTools = bp:GetChildren()
+			for i = 1, #bpTools do
+				if bpTools[i]:IsA("Tool") then
+					firstTool = bpTools[i]
+					break
+				end
+			end
+		end
+	end
+	return firstTool
+end
+
+local function miningLoop()
+	while isMining do
+		local hasTargets = false
+		for k, v in pairs(selectedTargets) do
+			if v then hasTargets = true break end
+		end
+		
+		if hasTargets then
+			local rocks = getRocks()
+			countStatusLabel.Text = "Instances Found: " .. #rocks
+			
+			local char = player.Character
+			if char then
+				local tool = char:FindFirstChildOfClass("Tool")
+				if not tool then
+					local optimalTool = getFirstTool()
+					if optimalTool and char:FindFirstChild("Humanoid") then
+						char.Humanoid:EquipTool(optimalTool)
+					end
+				end
+			end
+
+			if #rocks > 0 then
+				if rockIndex > #rocks then
+					rockIndex = 1
+				end
+				
+				local targetBlock = rocks[rockIndex]
+				if char and char:FindFirstChild("HumanoidRootPart") then
+					if targetBlock:IsA("Model") then
+						char:PivotTo(targetBlock:GetPivot())
+					else
+						char:PivotTo(targetBlock.CFrame)
+					end
+					char.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+					char.HumanoidRootPart.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+				end
+				
+				rockIndex = rockIndex + 1
+			end
+		end
+		task.wait(mineDelay)
+	end
+end
+
+createButton(secControl, "Start Mining", theme.Success, function()
+	if not isMining then
+		isMining = true
+		task.spawn(miningLoop)
+		doAutoClick()
+		enforceCollisionLoop()
+	end
+end)
+
+createButton(secControl, "Stop Mining", theme.Danger, function()
+	isMining = false
+end)
+
+local secNPCs = createSection(pageTeleports, "NPCs")
+createButton(secNPCs, "Upgrade Shop", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("QuestGiver", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(11.39, 4.00, -258.87))
+		end
+	end
+end)
+
+createButton(secNPCs, "Mining Shop", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Merchant", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(10.22, 4.00, -236.12))
+		end
+	end
+end)
+
+createButton(secNPCs, "Gear Shop", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(37.76, 4.26, -317.57))
+		end
+	end
+end)
+
+createButton(secNPCs, "Silverthorn Shop", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(-251.59, 4.00, -304.91))
+		end
+	end
+end)
+
+createButton(secNPCs, "Dr. Vortex", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(29.10, 4.26, -28.48))
+		end
+	end
+end)
+
+createButton(secNPCs, "Storm Watcher", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(58.82, 4.00, -228.76))
+		end
+	end
+end)
+
+createButton(secNPCs, "Quartermaster", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(-171.34, 4.00, -175.73))
+		end
+	end
+end)
+
+createButton(secNPCs, "Portal Keeper", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(689.70, 26.07, -250.97))
+		end
+	end
+end)
+
+createButton(secNPCs, "Abyssal Shop", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(84.43, -121.29, -1095.38))
+		end
+	end
+end)
+
+createButton(secNPCs, "Sword Forge", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(131.52, -57.83, -917.62))
+		end
+	end
+end)
+
+createButton(secNPCs, "Level Master", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(494.17, 4.51, 488.28))
+		end
+	end
+end)
+
+createButton(secNPCs, "Amulet Keeper", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(785.32, 5.39, 445.18))
+		end
+	end
+end)
+
+createButton(secNPCs, "The Warden", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(424.89, -110.21, -813.93))
+		end
+	end
+end)
+
+createButton(secNPCs, "Lost Abyssal Warrior", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(483.35, -110.21, -839.31))
+		end
+	end
+end)
+
+createButton(secNPCs, "Forgotten Shop", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local npc = workspace:FindFirstChild("Blacksmith", true)
+		if npc and npc:IsA("Model") and npc.PrimaryPart then
+			char:PivotTo(npc.PrimaryPart.CFrame * CFrame.new(0, 0, 5))
+		else
+			char:PivotTo(CFrame.new(531.20, -110.21, -809.46))
+		end
+	end
+end)
+
+local secLocations = createSection(pageTeleports, "Locations")
+createButton(secLocations, "Mine", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local spawnLocation = workspace:FindFirstChildOfClass("SpawnLocation")
+		if spawnLocation then
+			char:PivotTo(spawnLocation.CFrame + Vector3.new(0, 5, 0))
+		else
+			char:PivotTo(CFrame.new(618.06, -36.05, -241.03))
+		end
+	end
+end)
+
+createButton(secLocations, "Shop", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("ForestZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(35.92, 4.26, -269.80))
+		end
+	end
+end)
+
+createButton(secLocations, "Laboratory", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(2.72, 4.00, -15.58))
+		end
+	end
+end)
+
+createButton(secLocations, "Silverthorn", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(-160.96, 4.00, -193.85))
+		end
+	end
+end)
+
+createButton(secLocations, "Level Dimension", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(434.68, 4.26, 312.19))
+		end
+	end
+end)
+
+createButton(secLocations, "Amulets Dimension", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(784.87, 3.42, 323.82))
+		end
+	end
+end)
+
+createButton(secLocations, "Abyssal Mine", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(63.62, -121.28, -1257.59))
+		end
+	end
+end)
+
+createButton(secLocations, "Zombies", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(105.71, -57.36, -976.26))
+		end
+	end
+end)
+
+createButton(secLocations, "Boss Dimension", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(946.18, -25.32, -1138.07))
+		end
+	end
+end)
+
+createButton(secLocations, "Abyssal Lord", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(504.72, -110.21, -825.60))
+		end
+	end
+end)
+
+local secQuests = createSection(pageTeleports, "Questlines")
+createButton(secQuests, "#1 | ???", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(80.38, 4.00, -226.18))
+		end
+	end
+end)
+
+createButton(secQuests, "#2 | Abyssal Miner", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(628.86, -36.05, -241.76))
+		end
+	end
+end)
+
+createButton(secQuests, "#3 | Abyssal Samurai", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(11.62, -87.31, -1047.58))
+		end
+	end
+end)
+
+createButton(secQuests, "#4 | Abyssal Samurai General", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(136.97, -57.78, -904.63))
+		end
+	end
+end)
+
+createButton(secQuests, "Final Questline", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local zone = workspace:FindFirstChild("CaveZone", true)
+		if zone and zone:IsA("BasePart") then
+			char:PivotTo(zone.CFrame + Vector3.new(0, 10, 0))
+		else
+			char:PivotTo(CFrame.new(568.28, -110.16, -829.28))
+		end
+	end
+end)
+
+local secDevelopment = createSection(pageTeleports, "Development")
+createButton(secDevelopment, "Copy Current Position", theme.Accent, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local pos = char.HumanoidRootPart.Position
+		local formatStr = string.format("%.2f, %.2f, %.2f", pos.X, pos.Y, pos.Z)
+		pcall(function()
+			if setclipboard then
+				setclipboard(formatStr)
+			end
+		end)
+	end
+end)
+
+createButton(secDevelopment, "Safe Zone", theme.Sidebar, function()
+	local char = player.Character
+	if char and char:FindFirstChild("HumanoidRootPart") then
+		local safePart = Instance.new("Part")
+		safePart.Size = Vector3.new(50, 1, 50)
+		safePart.Position = Vector3.new(0, 995, 0)
+		safePart.Anchored = true
+		safePart.Parent = workspace
+		char:PivotTo(CFrame.new(459.52, 4.00, 31.21))
+	end
+end)
+
+local secESP = createSection(pageHighlights, "ESP Settings")
+local espRocks = false
+local espPlayers = false
+
+local function addHighlight(obj, color)
+	if not obj:FindFirstChild("NekoHighlight") then
+		local hl = Instance.new("Highlight")
+		hl.Name = "NekoHighlight"
+		hl.FillColor = color
+		hl.OutlineColor = Color3.new(1, 1, 1)
+		hl.Parent = obj
+	end
+end
+
+local function removeHighlight(obj)
+	if obj and obj:FindFirstChild("NekoHighlight") then
+		obj.NekoHighlight:Destroy()
+	end
+end
+
+createButton(secESP, "Toggle Rocks ESP", theme.Sidebar, function()
+	espRocks = not espRocks
+	if not espRocks then
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			if string.find(obj.Name, "Rock") and (obj:IsA("BasePart") or obj:IsA("Model")) then
+				removeHighlight(obj)
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while task.wait(2) do
+		if espRocks then
+			for _, obj in ipairs(workspace:GetDescendants()) do
+				if string.find(obj.Name, "Rock") and (obj:IsA("BasePart") or obj:IsA("Model")) then
+					addHighlight(obj, Color3.fromRGB(150, 150, 150))
+				end
+			end
+		end
+	end
+end)
+
+createButton(secESP, "Toggle Players ESP", theme.Sidebar, function()
+	espPlayers = not espPlayers
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p ~= player and p.Character then
+			if espPlayers then
+				addHighlight(p.Character, Color3.fromRGB(255, 0, 0))
+			else
+				removeHighlight(p.Character)
+			end
+		end
+	end
+end)
+
+Players.PlayerAdded:Connect(function(p)
+	p.CharacterAdded:Connect(function(char)
+		if espPlayers then
+			task.wait(1)
+			addHighlight(char, Color3.fromRGB(255, 0, 0))
+		end
+	end)
+end)
+
+local secMiscSettings = createSection(pageMisc, "Character")
+local walkSpeed = 16
+local jumpPower = 50
+local noclip = false
+local infJump = false
+
+createSlider(secMiscSettings, "WalkSpeed", 160, 1000, 160, function(val)
+	walkSpeed = val
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid.WalkSpeed = walkSpeed
+	end
+end)
+
+createSlider(secMiscSettings, "JumpPower", 500, 2000, 500, function(val)
+	jumpPower = val
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid.UseJumpPower = true
+		player.Character.Humanoid.JumpPower = jumpPower
+	end
+end)
+
+createButton(secMiscSettings, "Toggle Noclip", theme.Sidebar, function()
+	noclip = not noclip
+end)
+
+createButton(secMiscSettings, "Toggle Infinity Jump", theme.Sidebar, function()
+	infJump = not infJump
+end)
+
+RunService.Stepped:Connect(function()
+	if noclip and player.Character then
+		for _, p in ipairs(player.Character:GetDescendants()) do
+			if p:IsA("BasePart") then
+				p.CanCollide = false
+			end
+		end
+	end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+	if infJump and player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end)
+
+local secCreds = createSection(pageCredits, "Author Info")
+createLabel(secCreds, "Developer: Neko")
+createLabel(secCreds, "Discord: @neko.js")
+
+-- Free Key (NekoBlockssssYee)
