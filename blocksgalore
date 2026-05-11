@@ -1475,6 +1475,31 @@ createButton(secMiscSettings, "Free Lucky Spin", theme.Sidebar, function()
 	)
 end)
 
+local autoSpinActive = false
+
+createButton(secMiscSettings, "Start Auto Lucky Spin", theme.Success, function()
+	if not autoSpinActive then
+		autoSpinActive = true
+		task.spawn(function()
+			while autoSpinActive do
+				local productID = 3569739337
+				print("Auto Falsely Bought product:", productID)
+				
+				game:GetService("MarketplaceService"):SignalPromptProductPurchaseFinished(
+					player.UserId,
+					productID,
+					true
+				)
+				task.wait(6)
+			end
+		end)
+	end
+end)
+
+createButton(secMiscSettings, "Stop Auto Lucky Spin", theme.Danger, function()
+	autoSpinActive = false
+end)
+
 RunService.Stepped:Connect(function()
 	if noclip and player.Character then
 		for _, p in ipairs(player.Character:GetDescendants()) do
