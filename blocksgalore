@@ -1464,6 +1464,17 @@ createButton(secMiscSettings, "Toggle Infinity Jump", theme.Sidebar, function()
 	infJump = not infJump
 end)
 
+createButton(secMiscSettings, "Free Lucky Spin", theme.Sidebar, function()
+	local productID = 3569739337
+	print("Falsely Bought product:", productID)
+	
+	game:GetService("MarketplaceService"):SignalPromptProductPurchaseFinished(
+		player.UserId,
+		productID,
+		true
+	)
+end)
+
 RunService.Stepped:Connect(function()
 	if noclip and player.Character then
 		for _, p in ipairs(player.Character:GetDescendants()) do
