@@ -1079,13 +1079,15 @@ table.insert(state.Connections, RunService.RenderStepped:Connect(function()
 	end
 end))
 createSlider(secCharMain, "Dash Power", 50, 300, 50, function(val) state.DashPower = val end)
-createButton(secCharMain, "Dash (Q)", theme.Accent, function()
+state.DashEnabled = true
+createToggle(secCharMain, "Enable Dash (Q)", true, function(val) state.DashEnabled = val end)
+createButton(secCharMain, "Dash Manual", theme.Accent, function()
 	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 		player.Character.HumanoidRootPart.Velocity = camera.CFrame.LookVector * state.DashPower
 	end
 end)
 table.insert(state.Connections, UserInputService.InputBegan:Connect(function(input, gpe)
-	if not gpe and input.KeyCode == Enum.KeyCode.Q and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+	if state.DashEnabled and not gpe and input.KeyCode == Enum.KeyCode.Q and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 		player.Character.HumanoidRootPart.Velocity = camera.CFrame.LookVector * state.DashPower
 	end
 end))
