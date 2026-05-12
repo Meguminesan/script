@@ -7,13 +7,13 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
-local existingGui = playerGui:FindFirstChild("NekoProductFaker")
+local existingGui = playerGui:FindFirstChild("FOREST-LOST-SECRET-ERROR-NEKO")
 if existingGui then
 	existingGui:Destroy()
 end
 
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NekoProductFaker"
+screenGui.Name = "FOREST-LOST-SECRET-ERROR-NEKO"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
@@ -119,7 +119,7 @@ applyStroke(keyFrame, theme.Stroke, 1)
 local keyTitle = Instance.new("TextLabel")
 keyTitle.Size = UDim2.new(1, 0, 0, 40)
 keyTitle.BackgroundTransparency = 1
-keyTitle.Text = "Product Faker Key"
+keyTitle.Text = "Neko Key"
 keyTitle.TextColor3 = theme.TextPrimary
 keyTitle.Font = Enum.Font.GothamBold
 keyTitle.TextSize = 18
@@ -198,7 +198,7 @@ submitBtn.MouseButton1Click:Connect(function()
 	if keyInput.Text == encodedAuth then
 		keyFrame.Visible = false
 		mainFrame.Visible = true
-		sendNotification("Unlocked", "Welcome to Product Faker", theme.Success)
+		sendNotification("Unlocked", "Welcome to NK - Product Fucker", theme.Success)
 	else
 		keyInput.Text = "Invalid Key!"
 		task.wait(1)
@@ -277,7 +277,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0, 200, 0, 20)
 titleText.Position = UDim2.new(0, 45, 0, 8)
 titleText.BackgroundTransparency = 1
-titleText.Text = "Product Faker"
+titleText.Text = "NK - Product Fucker"
 titleText.TextColor3 = theme.TextPrimary
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 16
