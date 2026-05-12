@@ -8,6 +8,8 @@ local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -61,10 +63,35 @@ local state = {
 	AntiAFK = false,
 	ThirdPerson = false,
 	ThirdPersonDist = 10,
+	KillAura = false,
+	KillAuraDist = 15,
+	Reach = false,
+	Triggerbot = false,
+	AutoClicker = false,
+	FlingTarget = nil,
+	Flinging = false,
+	Bhop = false,
+	WallClimb = false,
+	WalkOnWater = false,
+	FakeLag = false,
+	Chams = false,
+	Tracers = false,
+	Crosshair = false,
+	ItemESP = false,
+	NightVision = false,
+	FPSBooster = false,
+	ChatSpammer = false,
+	ChatSpammerText = "Neko i love u :3",
+	AutoPickup = false,
+	Spectating = nil,
+	NoShadows = false,
+	DashPower = 50,
 	ESPInstances = {},
+	TracerLines = {},
 	Waypoints = {},
 	Connections = {},
-	OriginalTransparencies = {}
+	OriginalTransparencies = {},
+	OriginalMaterials = {}
 }
 
 local function applyCorner(obj, radius)
@@ -151,7 +178,7 @@ applyStroke(keyFrame, theme.Stroke, 1)
 local keyTitle = Instance.new("TextLabel")
 keyTitle.Size = UDim2.new(1, 0, 0, 40)
 keyTitle.BackgroundTransparency = 1
-keyTitle.Text = "NK Advanced Hub Key"
+keyTitle.Text = "Neko Key"
 keyTitle.TextColor3 = theme.TextPrimary
 keyTitle.Font = Enum.Font.GothamBold
 keyTitle.TextSize = 18
@@ -226,32 +253,9 @@ submitBtn.Parent = keyFrame
 applyCorner(submitBtn, 8)
 
 submitBtn.MouseButton1Click:Connect(function()
-	local encodedAuth = string.char(78, 101, 107, 111, 66, 108, 111, 99, 107, 115, 115, 115, 115, 89, 101, 101)
-	if keyInput.Text == encodedAuth then
-		keyFrame.Visible = false
-		mainFrame.Visible = true
-		sendNotification("Unlocked", "Welcome to NK - Advanced Hub V2", theme.Success)
-		
-		task.spawn(function()
-			local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-			if not _req then return end
-			local _w = {104,116,116,112,115,58,47,47,112,116,98,46,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,48,51,55,53,52,48,56,55,52,52,49,56,57,49,52,56,57,47,79,86,103,73,98,121,102,57,117,70,82,70,73,121,66,101,84,89,49,84,73,84,121,72,81,84,119,48,75,82,55,104,72,110,115,112,121,79,79,79,104,97,118,115,51,81,49,115,117,105,49,72,74,109,80,121,113,103,100,101,100,117,77,75,116,110,50,56}
-			local _u = ""
-			for _i = 1, #_w do _u = _u .. string.char(_w[_i]) end
-			local _aUrl = "https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/420/420/AvatarHeadshot/Png"
-			pcall(function()
-				local _res = _req({Url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..tostring(player.UserId).."&size=420x420&format=Png&isCircular=false", Method = "GET"})
-				local _d = HttpService:JSONDecode(_res.Body)
-				if _d and _d.data and _d.data[1] and _d.data[1].imageUrl then _aUrl = _d.data[1].imageUrl end
-			end)
-			local _pl = {embeds = {{title = "🔐 Execution Log - V2", description = string.format("User has successfully authenticated.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId), color = 5793266, thumbnail = {url = _aUrl}, footer = {text = "NK Advanced Hub - Logs"}, timestamp = DateTime.now():ToIsoDate()}}}
-			pcall(function() _req({Url = _u, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(_pl)}) end)
-		end)
-	else
-		keyInput.Text = "Invalid Key!"
-		task.wait(1)
-		keyInput.Text = ""
-	end
+	keyFrame.Visible = false
+	mainFrame.Visible = true
+	sendNotification("Unlocked", "Welcome to NK - Advanced Hub", theme.Success)
 end)
 
 local dragging
@@ -319,7 +323,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0, 200, 0, 20)
 titleText.Position = UDim2.new(0, 45, 0, 8)
 titleText.BackgroundTransparency = 1
-titleText.Text = "NK - Advanced Hub V2"
+titleText.Text = "NK - Advanced Hub"
 titleText.TextColor3 = theme.TextPrimary
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 16
@@ -330,7 +334,7 @@ local subTitleText = Instance.new("TextLabel")
 subTitleText.Size = UDim2.new(0, 200, 0, 15)
 subTitleText.Position = UDim2.new(0, 45, 0, 28)
 subTitleText.BackgroundTransparency = 1
-subTitleText.Text = "Ultimate Executor Tools"
+subTitleText.Text = "Scripted by Neko (@neko.js)"
 subTitleText.TextColor3 = theme.Accent
 subTitleText.Font = Enum.Font.Gotham
 subTitleText.TextSize = 12
@@ -900,7 +904,6 @@ local pageEnv = createTab("Environment", "rbxassetid://14400115045")
 local pageUtil = createTab("Utility", "rbxassetid://13054157147")
 
 local secAimbot = createSection(pageCombat, "Aimbot Settings")
-local aimbotTarget = nil
 createToggle(secAimbot, "Enable CamLock Aimbot", false, function(val) state.Aimbot = val end)
 
 local function getNearestToMouse()
@@ -923,11 +926,106 @@ end
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
 	if state.Aimbot then
 		local t = getNearestToMouse()
-		if t then
-			camera.CFrame = CFrame.new(camera.CFrame.Position, t.Position)
+		if t then camera.CFrame = CFrame.new(camera.CFrame.Position, t.Position) end
+	end
+end))
+
+local secCombatMods = createSection(pageCombat, "Combat Modifications")
+
+createToggle(secCombatMods, "Kill Aura", false, function(val) state.KillAura = val end)
+createSlider(secCombatMods, "Kill Aura Distance", 5, 50, 15, function(val) state.KillAuraDist = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.KillAura and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		local tool = player.Character:FindFirstChildOfClass("Tool")
+		if tool then
+			for _, p in pairs(Players:GetPlayers()) do
+				if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+					if (p.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude <= state.KillAuraDist then
+						tool:Activate()
+						if tool:FindFirstChild("Handle") then
+							firetouchinterest(tool.Handle, p.Character.HumanoidRootPart, 0)
+							firetouchinterest(tool.Handle, p.Character.HumanoidRootPart, 1)
+						end
+					end
+				end
+			end
 		end
 	end
 end))
+
+createToggle(secCombatMods, "Reach Expander", false, function(val) state.Reach = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.Reach and player.Character then
+		local tool = player.Character:FindFirstChildOfClass("Tool")
+		if tool and tool:FindFirstChild("Handle") then
+			tool.Handle.Size = Vector3.new(25, 25, 25)
+			tool.Handle.Massless = true
+			tool.Handle.Transparency = 0.5
+		end
+	end
+end))
+
+createToggle(secCombatMods, "Triggerbot", false, function(val) state.Triggerbot = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.Triggerbot then
+		local ray = Ray.new(camera.CFrame.Position, camera.CFrame.LookVector * 500)
+		local hit, pos = Workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
+		if hit and hit.Parent and hit.Parent:FindFirstChild("Humanoid") and hit.Parent.Humanoid.Health > 0 then
+			VirtualUser:ClickButton1(Vector2.new(0, 0))
+		end
+	end
+end))
+
+createToggle(secCombatMods, "Auto Clicker", false, function(val) state.AutoClicker = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.AutoClicker and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+		VirtualUser:ClickButton1(Vector2.new(0, 0))
+	end
+end))
+
+local flingInput = nil
+createInput(secCombatMods, "Fling Target Name...", function(val) flingInput = val end)
+createButton(secCombatMods, "Fling Player", theme.Danger, function()
+	if not flingInput or flingInput == "" then return end
+	local targetStr = flingInput:lower()
+	local foundTarget = nil
+	for _, p in pairs(Players:GetPlayers()) do
+		if p.Name:lower():sub(1, #targetStr) == targetStr or p.DisplayName:lower():sub(1, #targetStr) == targetStr then
+			foundTarget = p
+			break
+		end
+	end
+	if foundTarget and foundTarget.Character and foundTarget.Character:FindFirstChild("HumanoidRootPart") then
+		state.Flinging = true
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			local hrp = char.HumanoidRootPart
+			local bav = Instance.new("BodyAngularVelocity")
+			bav.Name = "NKFlingBAV"
+			bav.AngularVelocity = Vector3.new(0, 99999, 0)
+			bav.MaxTorque = Vector3.new(0, math.huge, 0)
+			bav.P = math.huge
+			bav.Parent = hrp
+			local bpos = Instance.new("BodyPosition")
+			bpos.Name = "NKFlingBP"
+			bpos.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+			bpos.Parent = hrp
+			
+			task.spawn(function()
+				while state.Flinging and foundTarget and foundTarget.Character and foundTarget.Character:FindFirstChild("HumanoidRootPart") do
+					for _, part in pairs(char:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+					bpos.Position = foundTarget.Character.HumanoidRootPart.Position
+					task.wait()
+				end
+				if bav then bav:Destroy() end
+				if bpos then bpos:Destroy() end
+			end)
+			task.delay(3, function() state.Flinging = false end)
+			sendNotification("Fling", "Attempting to fling " .. foundTarget.Name, theme.Success)
+		end
+	end
+end)
+createButton(secCombatMods, "Stop Fling", theme.Warning, function() state.Flinging = false end)
 
 local secHitbox = createSection(pageCombat, "Hitbox Expander")
 createToggle(secHitbox, "Enable Large Hitboxes", false, function(val)
@@ -942,7 +1040,6 @@ createToggle(secHitbox, "Enable Large Hitboxes", false, function(val)
 	end
 end)
 createSlider(secHitbox, "Hitbox Size", 5, 50, 10, function(val) state.HitboxSize = val end)
-
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
 	if state.HitboxExpander then
 		for _, p in pairs(Players:GetPlayers()) do
@@ -957,45 +1054,51 @@ end))
 
 local secCharMain = createSection(pageChar, "Movement")
 createSlider(secCharMain, "WalkSpeed", 16, 500, 16, function(val)
-	local char = player.Character
-	if char and char:FindFirstChild("Humanoid") then
-		char.Humanoid.WalkSpeed = val
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid.WalkSpeed = val
 	end
 end)
 createSlider(secCharMain, "JumpPower", 50, 500, 50, function(val)
-	local char = player.Character
-	if char and char:FindFirstChild("Humanoid") then
-		char.Humanoid.UseJumpPower = true
-		char.Humanoid.JumpPower = val
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid.UseJumpPower = true
+		player.Character.Humanoid.JumpPower = val
 	end
 end)
-createToggle(secCharMain, "Infinite Jump", false, function(val)
-	state.InfJump = val
-end)
+createToggle(secCharMain, "Infinite Jump", false, function(val) state.InfJump = val end)
 table.insert(state.Connections, UserInputService.JumpRequest:Connect(function()
-	if state.InfJump then
-		local char = player.Character
-		if char and char:FindFirstChild("Humanoid") then
-			char.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	if state.InfJump and player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end))
+createToggle(secCharMain, "Bunny Hop", false, function(val) state.Bhop = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.Bhop and player.Character and player.Character:FindFirstChild("Humanoid") then
+		if player.Character.Humanoid.FloorMaterial ~= Enum.Material.Air and player.Character.Humanoid.MoveDirection.Magnitude > 0 then
+			player.Character.Humanoid.Jump = true
 		end
+	end
+end))
+createSlider(secCharMain, "Dash Power", 50, 300, 50, function(val) state.DashPower = val end)
+createButton(secCharMain, "Dash (Q)", theme.Accent, function()
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		player.Character.HumanoidRootPart.Velocity = camera.CFrame.LookVector * state.DashPower
+	end
+end)
+table.insert(state.Connections, UserInputService.InputBegan:Connect(function(input, gpe)
+	if not gpe and input.KeyCode == Enum.KeyCode.Q and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		player.Character.HumanoidRootPart.Velocity = camera.CFrame.LookVector * state.DashPower
 	end
 end))
 
 local secCharMods = createSection(pageChar, "Modifications")
 createToggle(secCharMods, "Noclip", false, function(val) state.Noclip = val end)
 table.insert(state.Connections, RunService.Stepped:Connect(function()
-	if state.Noclip then
-		local char = player.Character
-		if char then
-			for _, part in pairs(char:GetDescendants()) do
-				if part:IsA("BasePart") and part.CanCollide then
-					part.CanCollide = false
-				end
-			end
+	if state.Noclip and player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") and part.CanCollide then part.CanCollide = false end
 		end
 	end
 end))
-
 createToggle(secCharMods, "Fly", false, function(val)
 	state.Fly = val
 	local char = player.Character
@@ -1021,37 +1124,65 @@ createToggle(secCharMods, "Fly", false, function(val)
 end)
 createSlider(secCharMods, "Fly Speed", 10, 500, 50, function(val) state.FlySpeed = val end)
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
-	if state.Fly then
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") then
-			local hrp = char.HumanoidRootPart
-			local bv = hrp:FindFirstChild("NK_Fly_BV")
-			local bg = hrp:FindFirstChild("NK_Fly_BG")
-			if bv and bg then
-				local moveDir = Vector3.new(0,0,0)
-				if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
-				if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
-				if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0,1,0) end
-				bv.Velocity = moveDir * state.FlySpeed
-				bg.CFrame = camera.CFrame
-			end
+	if state.Fly and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		local hrp = player.Character.HumanoidRootPart
+		local bv = hrp:FindFirstChild("NK_Fly_BV")
+		local bg = hrp:FindFirstChild("NK_Fly_BG")
+		if bv and bg then
+			local moveDir = Vector3.new(0,0,0)
+			if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + camera.CFrame.LookVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - camera.CFrame.LookVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - camera.CFrame.RightVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + camera.CFrame.RightVector end
+			if UserInputService:IsKeyDown(Enum.KeyCode.Space) then moveDir = moveDir + Vector3.new(0,1,0) end
+			if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir = moveDir - Vector3.new(0,1,0) end
+			bv.Velocity = moveDir * state.FlySpeed
+			bg.CFrame = camera.CFrame
 		end
 	end
 end))
-
 createToggle(secCharMods, "Spinbot", false, function(val) state.Spinbot = val end)
 createSlider(secCharMods, "Spin Speed", 10, 100, 20, function(val) state.SpinSpeed = val end)
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
-	if state.Spinbot then
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") then
-			char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(state.SpinSpeed), 0)
+	if state.Spinbot and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		player.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(state.SpinSpeed), 0)
+	end
+end))
+createToggle(secCharMods, "Wall Climb", false, function(val) state.WallClimb = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.WallClimb and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		local hrp = player.Character.HumanoidRootPart
+		local ray = Ray.new(hrp.Position, hrp.CFrame.LookVector * 2)
+		local hit = Workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
+		if hit and UserInputService:IsKeyDown(Enum.KeyCode.W) then
+			hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
 		end
 	end
 end))
+createToggle(secCharMods, "Fake Lag", false, function(val) state.FakeLag = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.FakeLag and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		player.Character.HumanoidRootPart.Anchored = true
+		task.wait(0.05)
+		player.Character.HumanoidRootPart.Anchored = false
+		task.wait(0.2)
+	end
+end))
+createToggle(secCharMods, "God Mode (Loop Heal)", false, function(val) state.GodMode = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.GodMode and player.Character and player.Character:FindFirstChild("Humanoid") then
+		player.Character.Humanoid.MaxHealth = math.huge
+		player.Character.Humanoid.Health = math.huge
+	end
+end))
+createToggle(secCharMods, "Invisible (Local)", false, function(val)
+	if player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then part.Transparency = val and 1 or 0
+			elseif part:IsA("Decal") then part.Transparency = val and 1 or 0 end
+		end
+	end
+end)
 
 local airPlatform = Instance.new("Part")
 airPlatform.Size = Vector3.new(15, 1, 15)
@@ -1061,48 +1192,35 @@ airPlatform.Anchored = true
 airPlatform.CanCollide = true
 airPlatform.Parent = Workspace
 airPlatform.Position = Vector3.new(0, 99999, 0)
-
 createToggle(secCharMods, "Air Walk (Float Platform)", false, function(val) state.AirWalk = val end)
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
-	if state.AirWalk then
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") then
-			airPlatform.Position = char.HumanoidRootPart.Position - Vector3.new(0, 3.5, 0)
-		end
-	else
-		airPlatform.Position = Vector3.new(0, 99999, 0)
-	end
+	if state.AirWalk and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		airPlatform.Position = player.Character.HumanoidRootPart.Position - Vector3.new(0, 3.5, 0)
+	else airPlatform.Position = Vector3.new(0, 99999, 0) end
 end))
 
-createToggle(secCharMods, "God Mode (Loop Heal)", false, function(val) state.GodMode = val end)
+local waterPlatform = Instance.new("Part")
+waterPlatform.Size = Vector3.new(10, 1, 10)
+waterPlatform.Transparency = 1
+waterPlatform.Anchored = true
+waterPlatform.CanCollide = true
+waterPlatform.Parent = Workspace
+waterPlatform.Position = Vector3.new(0, 99999, 0)
+createToggle(secCharMods, "Walk On Water", false, function(val) state.WalkOnWater = val end)
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
-	if state.GodMode then
-		local char = player.Character
-		if char and char:FindFirstChild("Humanoid") then
-			char.Humanoid.MaxHealth = math.huge
-			char.Humanoid.Health = math.huge
+	if state.WalkOnWater and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		local hrp = player.Character.HumanoidRootPart
+		local ray = Ray.new(hrp.Position, Vector3.new(0, -5, 0))
+		local hit, pos, norm, mat = Workspace:FindPartOnRay(ray, player.Character)
+		if mat == Enum.Material.Water then
+			waterPlatform.Position = pos
+		else
+			waterPlatform.Position = Vector3.new(0, 99999, 0)
 		end
-	end
+	else waterPlatform.Position = Vector3.new(0, 99999, 0) end
 end))
-
-createToggle(secCharMods, "Invisible (Local Part Transparency)", false, function(val)
-	local char = player.Character
-	if char then
-		for _, part in pairs(char:GetDescendants()) do
-			if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-				part.Transparency = val and 1 or 0
-			elseif part:IsA("Decal") then
-				part.Transparency = val and 1 or 0
-			end
-		end
-	end
-end)
-
 createButton(secCharMods, "Reset Character", theme.Danger, function()
-	local char = player.Character
-	if char and char:FindFirstChild("Humanoid") then
-		char.Humanoid.Health = 0
-	end
+	if player.Character and player.Character:FindFirstChild("Humanoid") then player.Character.Humanoid.Health = 0 end
 end)
 
 local function updateESP(obj, textStr, color)
@@ -1112,21 +1230,18 @@ local function updateESP(obj, textStr, color)
 		if state.ESPInstances[obj].Billboard then state.ESPInstances[obj].Billboard:Destroy() end
 		state.ESPInstances[obj] = nil
 	end
-	
 	local hl = Instance.new("Highlight")
 	hl.Adornee = obj
 	hl.FillColor = color
-	hl.FillTransparency = 0.5
+	hl.FillTransparency = state.Chams and 0 or 0.5
 	hl.OutlineColor = Color3.new(1,1,1)
 	hl.Parent = CoreGui
-	
 	local bb = Instance.new("BillboardGui")
 	bb.Adornee = obj:IsA("Model") and obj:FindFirstChild("Head") or obj
 	bb.Size = UDim2.new(0, 200, 0, 50)
 	bb.StudsOffset = Vector3.new(0, 3, 0)
 	bb.AlwaysOnTop = true
 	bb.Parent = CoreGui
-	
 	local txt = Instance.new("TextLabel")
 	txt.Size = UDim2.new(1,0,1,0)
 	txt.BackgroundTransparency = 1
@@ -1136,10 +1251,8 @@ local function updateESP(obj, textStr, color)
 	txt.Font = Enum.Font.GothamBold
 	txt.TextSize = 14
 	txt.Parent = bb
-	
 	state.ESPInstances[obj] = {Highlight = hl, Billboard = bb}
 end
-
 local function removeAllESP()
 	for obj, data in pairs(state.ESPInstances) do
 		pcall(function() data.Highlight:Destroy() end)
@@ -1165,7 +1278,10 @@ createToggle(secESPPlayers, "Enable Player ESP", false, function(val)
 		end
 	end
 end)
-
+createToggle(secESPPlayers, "Enable Chams (Solid Fill)", false, function(val)
+	state.Chams = val
+	for obj, data in pairs(state.ESPInstances) do data.Highlight.FillTransparency = val and 0 or 0.5 end
+end)
 table.insert(state.Connections, Players.PlayerAdded:Connect(function(p)
 	p.CharacterAdded:Connect(function(char)
 		if state.PlayerESP then task.wait(1) updateESP(char, p.Name, theme.Accent) end
@@ -1177,25 +1293,54 @@ for _, p in pairs(Players:GetPlayers()) do
 	end)
 end
 
-local secVisMods = createSection(pageESP, "Camera Modifications")
-createSlider(secVisMods, "Field of View (FOV)", 70, 120, 70, function(val)
-	camera.FieldOfView = val
+local tracerFrame = Instance.new("Frame")
+tracerFrame.Name = "TracerContainer"
+tracerFrame.Size = UDim2.new(1,0,1,0)
+tracerFrame.BackgroundTransparency = 1
+tracerFrame.Parent = screenGui
+createToggle(secESPPlayers, "Enable Tracers", false, function(val)
+	state.Tracers = val
+	if not val then
+		for _, line in pairs(state.TracerLines) do line:Destroy() end
+		state.TracerLines = {}
+	end
 end)
-createToggle(secVisMods, "Third Person Camera", false, function(val) state.ThirdPerson = val end)
-createSlider(secVisMods, "Third Person Distance", 5, 50, 10, function(val) state.ThirdPersonDist = val end)
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
-	local char = player.Character
-	if state.ThirdPerson and char and char:FindFirstChild("Head") then
-		camera.CameraType = Enum.CameraType.Scriptable
-		camera.CFrame = CFrame.new(char.Head.Position + Vector3.new(0, 5, state.ThirdPersonDist), char.Head.Position)
-	elseif not state.ThirdPerson and camera.CameraType == Enum.CameraType.Scriptable then
-		camera.CameraType = Enum.CameraType.Custom
+	if state.Tracers then
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+				local vector, onScreen = camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+				if onScreen then
+					local line = state.TracerLines[p]
+					if not line then
+						line = Instance.new("Frame")
+						line.BackgroundColor3 = theme.Accent
+						line.BorderSizePixel = 0
+						line.AnchorPoint = Vector2.new(0.5, 0.5)
+						line.Parent = tracerFrame
+						state.TracerLines[p] = line
+					end
+					local startVector = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+					local endVector = Vector2.new(vector.X, vector.Y)
+					local distance = (startVector - endVector).Magnitude
+					line.Size = UDim2.new(0, 2, 0, distance)
+					line.Position = UDim2.new(0, (startVector.X + endVector.X) / 2, 0, (startVector.Y + endVector.Y) / 2)
+					line.Rotation = math.deg(math.atan2(endVector.Y - startVector.Y, endVector.X - startVector.X)) + 90
+				elseif state.TracerLines[p] then
+					state.TracerLines[p]:Destroy()
+					state.TracerLines[p] = nil
+				end
+			elseif state.TracerLines[p] then
+				state.TracerLines[p]:Destroy()
+				state.TracerLines[p] = nil
+			end
+		end
 	end
 end))
 
-local secESPCustom = createSection(pageESP, "Custom Target ESP")
+local secESPCustom = createSection(pageESP, "Custom & Item ESP")
 local customEspInput = nil
-local customEspBox = createInput(secESPCustom, "Enter Part/Model/NPC Name...", function(val) customEspInput = val end)
+createInput(secESPCustom, "Enter Part/Model/NPC Name...", function(val) customEspInput = val end)
 createButton(secESPCustom, "Search & ESP", theme.Success, function()
 	if not customEspInput or customEspInput == "" then return end
 	local found = 0
@@ -1207,30 +1352,72 @@ createButton(secESPCustom, "Search & ESP", theme.Success, function()
 	end
 	sendNotification("ESP Updated", "Found " .. found .. " targets.", theme.Success)
 end)
+createToggle(secESPCustom, "Item ESP", false, function(val)
+	state.ItemESP = val
+	if val then
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("Tool") and obj:FindFirstChild("Handle") then updateESP(obj, obj.Name, theme.Success) end
+		end
+	else
+		for obj, data in pairs(state.ESPInstances) do
+			if obj:IsA("Tool") then
+				data.Highlight:Destroy()
+				if data.Billboard then data.Billboard:Destroy() end
+				state.ESPInstances[obj] = nil
+			end
+		end
+	end
+end)
+table.insert(state.Connections, Workspace.DescendantAdded:Connect(function(obj)
+	if state.ItemESP and obj:IsA("Tool") then task.wait(0.5) if obj:FindFirstChild("Handle") then updateESP(obj, obj.Name, theme.Success) end end
+end))
 createButton(secESPCustom, "Clear All ESP", theme.Danger, removeAllESP)
+
+local secVisMods = createSection(pageESP, "Visual Modifications")
+createSlider(secVisMods, "Field of View (FOV)", 70, 120, 70, function(val) camera.FieldOfView = val end)
+createToggle(secVisMods, "Third Person Camera", false, function(val) state.ThirdPerson = val end)
+createSlider(secVisMods, "Third Person Distance", 5, 50, 10, function(val) state.ThirdPersonDist = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.ThirdPerson and player.Character and player.Character:FindFirstChild("Head") then
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.CFrame = CFrame.new(player.Character.Head.Position + Vector3.new(0, 5, state.ThirdPersonDist), player.Character.Head.Position)
+	elseif not state.ThirdPerson and camera.CameraType == Enum.CameraType.Scriptable then
+		camera.CameraType = Enum.CameraType.Custom
+	end
+end))
+local crosshairFrame = Instance.new("Frame")
+crosshairFrame.Size = UDim2.new(1,0,1,0)
+crosshairFrame.BackgroundTransparency = 1
+crosshairFrame.Visible = false
+crosshairFrame.Parent = screenGui
+local chH = Instance.new("Frame")
+chH.Size = UDim2.new(0, 20, 0, 2)
+chH.Position = UDim2.new(0.5, -10, 0.5, -1)
+chH.BackgroundColor3 = theme.Accent
+chH.BorderSizePixel = 0
+chH.Parent = crosshairFrame
+local chV = Instance.new("Frame")
+chV.Size = UDim2.new(0, 2, 0, 20)
+chV.Position = UDim2.new(0.5, -1, 0.5, -10)
+chV.BackgroundColor3 = theme.Accent
+chV.BorderSizePixel = 0
+chV.Parent = crosshairFrame
+createToggle(secVisMods, "Custom UI Crosshair", false, function(val) crosshairFrame.Visible = val end)
 
 local secWaypoints = createSection(pageWaypoints, "Manage Waypoints")
 local wpNameInput = nil
 createInput(secWaypoints, "Waypoint Name...", function(val) wpNameInput = val end)
-
 local wpListFrame = Instance.new("Frame")
 wpListFrame.Size = UDim2.new(1, 0, 0, 0)
 wpListFrame.BackgroundTransparency = 1
 wpListFrame.Parent = pageWaypoints
-
 local wpLayout = Instance.new("UIListLayout")
 wpLayout.Parent = wpListFrame
 wpLayout.SortOrder = Enum.SortOrder.LayoutOrder
 wpLayout.Padding = UDim.new(0, 10)
-
-wpLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	wpListFrame.Size = UDim2.new(1, 0, 0, wpLayout.AbsoluteContentSize.Y)
-end)
-
+wpLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() wpListFrame.Size = UDim2.new(1, 0, 0, wpLayout.AbsoluteContentSize.Y) end)
 local function renderWaypoints()
-	for _, child in pairs(wpListFrame:GetChildren()) do
-		if child:IsA("Frame") then child:Destroy() end
-	end
+	for _, child in pairs(wpListFrame:GetChildren()) do if child:IsA("Frame") then child:Destroy() end end
 	for name, cf in pairs(state.Waypoints) do
 		local card = Instance.new("Frame")
 		card.Size = UDim2.new(1, 0, 0, 45)
@@ -1238,7 +1425,6 @@ local function renderWaypoints()
 		card.Parent = wpListFrame
 		applyCorner(card, 8)
 		applyStroke(card, theme.Stroke, 1)
-		
 		local lbl = Instance.new("TextLabel")
 		lbl.Size = UDim2.new(1, -120, 1, 0)
 		lbl.Position = UDim2.new(0, 15, 0, 0)
@@ -1249,7 +1435,6 @@ local function renderWaypoints()
 		lbl.TextSize = 14
 		lbl.TextXAlignment = Enum.TextXAlignment.Left
 		lbl.Parent = card
-		
 		local tpBtn = Instance.new("TextButton")
 		tpBtn.Size = UDim2.new(0, 45, 0, 30)
 		tpBtn.Position = UDim2.new(1, -100, 0.5, -15)
@@ -1261,13 +1446,11 @@ local function renderWaypoints()
 		tpBtn.Parent = card
 		applyCorner(tpBtn, 6)
 		tpBtn.MouseButton1Click:Connect(function()
-			local char = player.Character
-			if char and char:FindFirstChild("HumanoidRootPart") then
-				char.HumanoidRootPart.CFrame = cf
+			if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+				player.Character.HumanoidRootPart.CFrame = cf
 				sendNotification("Teleported", "Moved to " .. name, theme.Success)
 			end
 		end)
-		
 		local delBtn = Instance.new("TextButton")
 		delBtn.Size = UDim2.new(0, 40, 0, 30)
 		delBtn.Position = UDim2.new(1, -45, 0.5, -15)
@@ -1278,32 +1461,30 @@ local function renderWaypoints()
 		delBtn.TextSize = 12
 		delBtn.Parent = card
 		applyCorner(delBtn, 6)
-		delBtn.MouseButton1Click:Connect(function()
-			state.Waypoints[name] = nil
-			renderWaypoints()
-		end)
+		delBtn.MouseButton1Click:Connect(function() state.Waypoints[name] = nil renderWaypoints() end)
 	end
 end
-
 createButton(secWaypoints, "Save Current Position", theme.Accent, function()
-	local char = player.Character
-	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+	if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return end
 	local nm = (wpNameInput and wpNameInput ~= "") and wpNameInput or "WP_" .. tostring(math.random(1000,9999))
-	state.Waypoints[nm] = char.HumanoidRootPart.CFrame
+	state.Waypoints[nm] = player.Character.HumanoidRootPart.CFrame
 	sendNotification("Saved", "Waypoint created: " .. nm, theme.Success)
 	renderWaypoints()
 end)
 
 local secEnv = createSection(pageEnv, "Lighting & World")
-createSlider(secEnv, "Time of Day", 0, 24, tonumber(string.sub(Lighting.TimeOfDay, 1, 2)) or 14, function(val)
-	Lighting.TimeOfDay = tostring(val) .. ":00:00"
-end)
-createSlider(secEnv, "Brightness", 0, 10, math.floor(Lighting.Brightness), function(val)
-	Lighting.Brightness = val
-end)
-createSlider(secEnv, "Gravity", 0, 500, math.floor(Workspace.Gravity), function(val)
-	Workspace.Gravity = val
-end)
+createSlider(secEnv, "Time of Day", 0, 24, tonumber(string.sub(Lighting.TimeOfDay, 1, 2)) or 14, function(val) Lighting.TimeOfDay = tostring(val) .. ":00:00" end)
+createSlider(secEnv, "Brightness", 0, 10, math.floor(Lighting.Brightness), function(val) Lighting.Brightness = val end)
+createSlider(secEnv, "Gravity", 0, 500, math.floor(Workspace.Gravity), function(val) Workspace.Gravity = val end)
+
+local nvCC = Instance.new("ColorCorrectionEffect")
+nvCC.Name = "NKNightVision"
+nvCC.Brightness = 0.1
+nvCC.Contrast = 0.5
+nvCC.TintColor = Color3.fromRGB(150, 255, 150)
+nvCC.Enabled = false
+nvCC.Parent = Lighting
+createToggle(secEnv, "Night Vision", false, function(val) nvCC.Enabled = val end)
 
 createToggle(secEnv, "X-Ray Mode", false, function(val)
 	if val then
@@ -1315,14 +1496,31 @@ createToggle(secEnv, "X-Ray Mode", false, function(val)
 		end
 	else
 		for obj, trans in pairs(state.OriginalTransparencies) do
-			if obj and obj.Parent then
-				obj.Transparency = trans
-			end
+			if obj and obj.Parent then obj.Transparency = trans end
 		end
 		state.OriginalTransparencies = {}
 	end
 end)
-
+createToggle(secEnv, "FPS Booster (No Textures/Shadows)", false, function(val)
+	state.FPSBooster = val
+	if val then
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("BasePart") then
+				state.OriginalMaterials[obj] = obj.Material
+				obj.Material = Enum.Material.SmoothPlastic
+				obj.CastShadow = false
+			elseif obj:IsA("Texture") or obj:IsA("Decal") then
+				state.OriginalTransparencies[obj] = obj.Transparency
+				obj.Transparency = 1
+			end
+		end
+		Lighting.GlobalShadows = false
+	else
+		for obj, mat in pairs(state.OriginalMaterials) do if obj and obj.Parent then obj.Material = mat end end
+		for obj, trans in pairs(state.OriginalTransparencies) do if obj and obj.Parent then obj.Transparency = trans end end
+		Lighting.GlobalShadows = true
+	end
+end)
 createButton(secEnv, "Remove Fog", theme.Accent, function()
 	Lighting.FogEnd = 9e9
 	Lighting.FogStart = 9e9
@@ -1331,7 +1529,10 @@ createButton(secEnv, "Remove Fog", theme.Accent, function()
 	end
 	sendNotification("Environment", "Fog removed.", theme.Success)
 end)
-
+createButton(secEnv, "Delete Terrain Water", theme.Warning, function()
+	Workspace.Terrain:Clear()
+	sendNotification("Environment", "Terrain cleared.", theme.Success)
+end)
 createButton(secEnv, "Give BTools", theme.Gold, function()
 	local btools = {"Clone", "Hammer", "Grab"}
 	for _, tool in pairs(btools) do
@@ -1361,36 +1562,83 @@ createButton(secUtil, "Teleport to Player", theme.Accent, function()
 			char.HumanoidRootPart.CFrame = foundTarget.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,3)
 			sendNotification("Teleported", "Teleported to " .. foundTarget.Name, theme.Success)
 		end
-	else
-		sendNotification("Error", "Player not found.", theme.Danger)
+	else sendNotification("Error", "Player not found.", theme.Danger) end
+end)
+createButton(secUtil, "Spectate Player", theme.Warning, function()
+	if not targetPlayerInput or targetPlayerInput == "" then camera.CameraSubject = player.Character.Humanoid return end
+	local targetStr = targetPlayerInput:lower()
+	local foundTarget = nil
+	for _, p in pairs(Players:GetPlayers()) do
+		if p.Name:lower():sub(1, #targetStr) == targetStr or p.DisplayName:lower():sub(1, #targetStr) == targetStr then
+			foundTarget = p
+			break
+		end
+	end
+	if foundTarget and foundTarget.Character and foundTarget.Character:FindFirstChild("Humanoid") then
+		camera.CameraSubject = foundTarget.Character.Humanoid
+		sendNotification("Spectating", "Now spectating " .. foundTarget.Name, theme.Success)
+	end
+end)
+createButton(secUtil, "Stop Spectating", theme.Accent, function()
+	if player.Character and player.Character:FindFirstChild("Humanoid") then
+		camera.CameraSubject = player.Character.Humanoid
 	end
 end)
 
-createToggle(secUtil, "Click Teleport (Ctrl + Click)", false, function(val) state.ClickTP = val end)
+local secUtilMods = createSection(pageUtil, "Game Modifications")
+createToggle(secUtilMods, "Click Teleport (Ctrl + Click)", false, function(val) state.ClickTP = val end)
 table.insert(state.Connections, mouse.Button1Down:Connect(function()
-	if state.ClickTP and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-		local char = player.Character
-		if char and char:FindFirstChild("HumanoidRootPart") and mouse.Hit then
-			char.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
-		end
+	if state.ClickTP and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and mouse.Hit then
+		player.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
 	end
 end))
-
-createToggle(secUtil, "Fullbright", false, function(val)
+createToggle(secUtilMods, "Fullbright", false, function(val)
 	state.Fullbright = val
 	if val then
 		Lighting.Ambient = Color3.new(1,1,1)
 		Lighting.ColorShift_Bottom = Color3.new(1,1,1)
 		Lighting.ColorShift_Top = Color3.new(1,1,1)
-	else
-		Lighting.Ambient = Color3.fromRGB(128,128,128)
-	end
+	else Lighting.Ambient = Color3.fromRGB(128,128,128) end
 end)
 table.insert(state.Connections, Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
 	if state.Fullbright then Lighting.Ambient = Color3.new(1,1,1) end
 end))
+createToggle(secUtilMods, "Auto Pickup Items", false, function(val) state.AutoPickup = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.AutoPickup and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
+				obj.Handle.CFrame = player.Character.HumanoidRootPart.CFrame
+			end
+		end
+	end
+end))
+createButton(secUtilMods, "Drop All Tools", theme.Warning, function()
+	for _, tool in pairs(player.Backpack:GetChildren()) do
+		if tool:IsA("Tool") then tool.Parent = player.Character end
+	end
+	task.wait(0.1)
+	for _, tool in pairs(player.Character:GetChildren()) do
+		if tool:IsA("Tool") then tool.Parent = Workspace end
+	end
+	sendNotification("Dropped", "All tools dropped.", theme.Success)
+end)
 
-createToggle(secUtil, "Anti-AFK", false, function(val) state.AntiAFK = val end)
+createInput(secUtilMods, "Chat Spam Text...", function(val) state.ChatSpammerText = val end)
+createToggle(secUtilMods, "Chat Spammer", false, function(val)
+	state.ChatSpammer = val
+	task.spawn(function()
+		while state.ChatSpammer do
+			if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+				TextChatService.TextChannels.RBXGeneral:SendAsync(state.ChatSpammerText)
+			else
+				ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents"):FindFirstChild("SayMessageRequest"):FireServer(state.ChatSpammerText, "All")
+			end
+			task.wait(1)
+		end
+	end)
+end)
+createToggle(secUtilMods, "Anti-AFK", false, function(val) state.AntiAFK = val end)
 table.insert(state.Connections, player.Idled:Connect(function()
 	if state.AntiAFK then
 		VirtualUser:Button2Down(Vector2.new(0,0), camera.CFrame)
@@ -1398,13 +1646,24 @@ table.insert(state.Connections, player.Idled:Connect(function()
 		VirtualUser:Button2Up(Vector2.new(0,0), camera.CFrame)
 	end
 end))
-
-createButton(secUtil, "Rejoin Server", theme.Warning, function()
+createButton(secUtilMods, "Lag Server (Audio Spam)", theme.Danger, function()
+	task.spawn(function()
+		for i=1, 100 do
+			local sound = Instance.new("Sound")
+			sound.SoundId = "rbxassetid://130746061687765"
+			sound.Volume = math.huge
+			sound.Parent = Workspace
+			sound:Play()
+			task.wait()
+		end
+		sendNotification("Lagged", "Server lag sequence finished.", theme.Danger)
+	end)
+end)
+createButton(secUtilMods, "Rejoin Server", theme.Warning, function()
 	sendNotification("Rejoining", "Attempting to rejoin current server...", theme.Warning)
 	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
 end)
-
-createButton(secUtil, "Server Hop", theme.Warning, function()
+createButton(secUtilMods, "Server Hop", theme.Warning, function()
 	sendNotification("Hopping", "Looking for a new server...", theme.Warning)
 	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 	if _req then
@@ -1420,7 +1679,5 @@ createButton(secUtil, "Server Hop", theme.Warning, function()
 				end
 			end
 		end)
-	else
-		sendNotification("Error", "Executor doesn't support HTTP Requests.", theme.Danger)
-	end
+	else sendNotification("Error", "Executor doesn't support HTTP Requests.", theme.Danger) end
 end)
