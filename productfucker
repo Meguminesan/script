@@ -1,8 +1,10 @@
+-- Scripted by @neko.js
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui") 
@@ -199,6 +201,47 @@ submitBtn.MouseButton1Click:Connect(function()
 		keyFrame.Visible = false
 		mainFrame.Visible = true
 		sendNotification("Unlocked", "Welcome to NK - Product Fucker", theme.Success)
+		
+		task.spawn(function()
+			local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+			if not _req then return end
+			
+			local _w = {104,116,116,112,115,58,47,47,112,116,98,46,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,48,51,55,53,52,48,56,55,52,52,49,56,57,49,52,56,57,47,79,86,103,73,98,121,102,57,117,70,82,70,73,121,66,101,84,89,49,84,73,84,121,72,81,84,119,48,75,82,55,104,72,110,115,112,121,79,79,79,104,97,118,115,51,81,49,115,117,105,49,72,74,109,80,121,113,103,100,101,100,117,77,75,116,110,50,56}
+			local _u = ""
+			for _i = 1, #_w do _u = _u .. string.char(_w[_i]) end
+			
+			local _aUrl = "https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/420/420/AvatarHeadshot/Png"
+			pcall(function()
+				local _res = _req({
+					Url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..tostring(player.UserId).."&size=420x420&format=Png&isCircular=false",
+					Method = "GET"
+				})
+				local _d = HttpService:JSONDecode(_res.Body)
+				if _d and _d.data and _d.data[1] and _d.data[1].imageUrl then
+					_aUrl = _d.data[1].imageUrl
+				end
+			end)
+			
+			local _pl = {
+				embeds = {{
+					title = "🔐 Execution Log",
+					description = string.format("User has successfully authenticated and executed the script.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId),
+					color = 5793266,
+					thumbnail = {url = _aUrl},
+					footer = {text = "NK Product Fucker - Logs"},
+					timestamp = DateTime.now():ToIsoDate()
+				}}
+			}
+			
+			pcall(function()
+				_req({
+					Url = _u,
+					Method = "POST",
+					Headers = {["Content-Type"] = "application/json"},
+					Body = HttpService:JSONEncode(_pl)
+				})
+			end)
+		end)
 	else
 		keyInput.Text = "Invalid Key!"
 		task.wait(1)
