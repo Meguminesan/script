@@ -1,0 +1,781 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local existingGui = playerGui:FindFirstChild("NekoProductFaker")
+if existingGui then
+	existingGui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NekoProductFaker"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local theme = {
+	Background = Color3.fromRGB(43, 45, 49),
+	Sidebar = Color3.fromRGB(30, 31, 34),
+	ItemBG = Color3.fromRGB(23, 24, 26),
+	ItemHover = Color3.fromRGB(64, 66, 73),
+	TabActive = Color3.fromRGB(64, 66, 73),
+	TabInactive = Color3.fromRGB(30, 31, 34),
+	TextPrimary = Color3.fromRGB(219, 222, 225),
+	TextSecondary = Color3.fromRGB(148, 155, 164),
+	Accent = Color3.fromRGB(88, 101, 242),
+	Success = Color3.fromRGB(35, 165, 89),
+	Danger = Color3.fromRGB(218, 55, 60),
+	Stroke = Color3.fromRGB(65, 68, 74),
+	Topbar = Color3.fromRGB(23, 24, 26),
+	Warning = Color3.fromRGB(255, 53, 53),
+	Gold = Color3.fromRGB(255, 201, 37)
+}
+
+local function applyCorner(obj, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = obj
+end
+
+local function applyStroke(obj, color, thickness)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Thickness = thickness
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = obj
+	return stroke
+end
+
+local keyFrame = Instance.new("Frame")
+keyFrame.Name = "KeyFrame"
+keyFrame.Size = UDim2.new(0, 350, 0, 200)
+keyFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+keyFrame.BackgroundColor3 = theme.Background
+keyFrame.BorderSizePixel = 0
+keyFrame.Active = true
+keyFrame.Parent = screenGui
+applyCorner(keyFrame, 12)
+applyStroke(keyFrame, theme.Stroke, 1)
+
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1, 0, 0, 40)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "Product Faker Key"
+keyTitle.TextColor3 = theme.TextPrimary
+keyTitle.Font = Enum.Font.GothamBold
+keyTitle.TextSize = 18
+keyTitle.Parent = keyFrame
+
+local keyInput = Instance.new("TextBox")
+keyInput.Size = UDim2.new(0, 280, 0, 40)
+keyInput.Position = UDim2.new(0.5, -140, 0.5, -20)
+keyInput.BackgroundColor3 = theme.ItemBG
+keyInput.TextColor3 = theme.TextPrimary
+keyInput.Font = Enum.Font.Gotham
+keyInput.TextSize = 14
+keyInput.PlaceholderText = "Enter Key..."
+keyInput.Text = ""
+keyInput.Parent = keyFrame
+applyCorner(keyInput, 8)
+applyStroke(keyInput, theme.Stroke, 1)
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 650, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -225)
+mainFrame.BackgroundColor3 = theme.Background
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+applyCorner(mainFrame, 12)
+applyStroke(mainFrame, theme.Stroke, 1)
+
+local mainScale = Instance.new("UIScale")
+mainScale.Parent = mainFrame
+mainScale.Scale = 1
+
+local floatIcon = Instance.new("ImageButton")
+floatIcon.Size = UDim2.new(0, 50, 0, 50)
+floatIcon.Position = UDim2.new(1, -70, 1, -160)
+floatIcon.BackgroundColor3 = theme.Sidebar
+floatIcon.Image = "rbxassetid://16884179279"
+floatIcon.ImageColor3 = theme.Accent
+floatIcon.Visible = false
+floatIcon.Parent = screenGui
+applyCorner(floatIcon, 25)
+applyStroke(floatIcon, theme.Accent, 2)
+
+floatIcon.MouseButton1Click:Connect(function()
+	local twOut = TweenService:Create(floatIcon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+	twOut:Play()
+	twOut.Completed:Wait()
+	floatIcon.Visible = false
+	mainFrame.Visible = true
+	mainScale.Scale = 0
+	TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+end)
+
+local submitBtn = Instance.new("TextButton")
+submitBtn.Size = UDim2.new(0, 130, 0, 35)
+submitBtn.Position = UDim2.new(0.5, -65, 1, -50)
+submitBtn.BackgroundColor3 = theme.Accent
+submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitBtn.Font = Enum.Font.GothamBold
+submitBtn.TextSize = 14
+submitBtn.Text = "Verify"
+submitBtn.Parent = keyFrame
+applyCorner(submitBtn, 8)
+
+submitBtn.MouseButton1Click:Connect(function()
+	local encodedAuth = string.char(78, 101, 107, 111, 66, 108, 111, 99, 107, 115, 115, 115, 115, 89, 101, 101)
+	if keyInput.Text == encodedAuth then
+		keyFrame.Visible = false
+		mainFrame.Visible = true
+	else
+		keyInput.Text = "Invalid Key!"
+		task.wait(1)
+		keyInput.Text = ""
+	end
+end)
+
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(
+			startPos.X.Scale, 
+			startPos.X.Offset + delta.X, 
+			startPos.Y.Scale, 
+			startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+local topbar = Instance.new("Frame")
+topbar.Size = UDim2.new(1, 0, 0, 50)
+topbar.BackgroundColor3 = theme.Topbar
+topbar.BorderSizePixel = 0
+topbar.Parent = mainFrame
+applyCorner(topbar, 12)
+
+local topbarCover = Instance.new("Frame")
+topbarCover.Size = UDim2.new(1, 0, 0, 12)
+topbarCover.Position = UDim2.new(0, 0, 1, -12)
+topbarCover.BackgroundColor3 = theme.Topbar
+topbarCover.BorderSizePixel = 0
+topbarCover.Parent = topbar
+
+local topbarBottomStroke = Instance.new("Frame")
+topbarBottomStroke.Size = UDim2.new(1, 0, 0, 1)
+topbarBottomStroke.Position = UDim2.new(0, 0, 1, 0)
+topbarBottomStroke.BackgroundColor3 = theme.Stroke
+topbarBottomStroke.BorderSizePixel = 0
+topbarBottomStroke.Parent = topbar
+
+local titleIcon = Instance.new("ImageLabel")
+titleIcon.Size = UDim2.new(0, 26, 0, 26)
+titleIcon.Position = UDim2.new(0, 15, 0.5, -13)
+titleIcon.BackgroundTransparency = 1
+titleIcon.Image = "rbxassetid://16167590360"
+titleIcon.ImageColor3 = theme.Accent
+titleIcon.Parent = topbar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(0, 200, 0, 20)
+titleText.Position = UDim2.new(0, 55, 0, 8)
+titleText.BackgroundTransparency = 1
+titleText.Text = "Product Faker"
+titleText.TextColor3 = theme.TextPrimary
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 16
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = topbar
+
+local subTitleText = Instance.new("TextLabel")
+subTitleText.Size = UDim2.new(0, 200, 0, 15)
+subTitleText.Position = UDim2.new(0, 55, 0, 28)
+subTitleText.BackgroundTransparency = 1
+subTitleText.Text = "By esore | Styled by Neko"
+subTitleText.TextColor3 = theme.Accent
+subTitleText.Font = Enum.Font.Gotham
+subTitleText.TextSize = 12
+subTitleText.TextXAlignment = Enum.TextXAlignment.Left
+subTitleText.Parent = topbar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0.5, -15)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "X"
+closeBtn.TextColor3 = theme.TextSecondary
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.Parent = topbar
+
+closeBtn.MouseEnter:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.Danger}):Play()
+end)
+closeBtn.MouseLeave:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+end)
+closeBtn.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -75, 0.5, -15)
+minimizeBtn.BackgroundTransparency = 1
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = theme.TextSecondary
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 22
+minimizeBtn.Parent = topbar
+
+minimizeBtn.MouseEnter:Connect(function()
+	TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+end)
+minimizeBtn.MouseLeave:Connect(function()
+	TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+end)
+minimizeBtn.MouseButton1Click:Connect(function()
+	local twIn = TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
+	twIn:Play()
+	twIn.Completed:Wait()
+	mainFrame.Visible = false
+	floatIcon.Size = UDim2.new(0, 0, 0, 0)
+	floatIcon.Visible = true
+	TweenService:Create(floatIcon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 50, 0, 50)}):Play()
+end)
+
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 220, 1, -50)
+sidebar.Position = UDim2.new(0, 0, 0, 50)
+sidebar.BackgroundColor3 = theme.Sidebar
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
+applyCorner(sidebar, 12)
+
+local sidebarCoverRight = Instance.new("Frame")
+sidebarCoverRight.Size = UDim2.new(0, 12, 1, 0)
+sidebarCoverRight.Position = UDim2.new(1, -12, 0, 0)
+sidebarCoverRight.BackgroundColor3 = theme.Sidebar
+sidebarCoverRight.BorderSizePixel = 0
+sidebarCoverRight.Parent = sidebar
+
+local sidebarCoverTop = Instance.new("Frame")
+sidebarCoverTop.Size = UDim2.new(1, 0, 0, 12)
+sidebarCoverTop.Position = UDim2.new(0, 0, 0, 0)
+sidebarCoverTop.BackgroundColor3 = theme.Sidebar
+sidebarCoverTop.BorderSizePixel = 0
+sidebarCoverTop.Parent = sidebar
+
+local sidebarRightStroke = Instance.new("Frame")
+sidebarRightStroke.Size = UDim2.new(0, 1, 1, 0)
+sidebarRightStroke.Position = UDim2.new(1, 0, 0, 0)
+sidebarRightStroke.BackgroundColor3 = theme.Stroke
+sidebarRightStroke.BorderSizePixel = 0
+sidebarRightStroke.Parent = sidebar
+
+local tabContainer = Instance.new("ScrollingFrame")
+tabContainer.Size = UDim2.new(1, 0, 1, -80)
+tabContainer.Position = UDim2.new(0, 0, 0, 10)
+tabContainer.BackgroundTransparency = 1
+tabContainer.BorderSizePixel = 0
+tabContainer.ScrollBarThickness = 2
+tabContainer.ScrollBarImageColor3 = theme.ItemBG
+tabContainer.Parent = sidebar
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.Parent = tabContainer
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Padding = UDim.new(0, 8)
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local profileFrame = Instance.new("Frame")
+profileFrame.Size = UDim2.new(1, 0, 0, 70)
+profileFrame.Position = UDim2.new(0, 0, 1, -70)
+profileFrame.BackgroundColor3 = theme.ItemBG
+profileFrame.BorderSizePixel = 0
+profileFrame.Parent = sidebar
+applyCorner(profileFrame, 12)
+
+local profileTopStroke = Instance.new("Frame")
+profileTopStroke.Size = UDim2.new(1, 0, 0, 1)
+profileTopStroke.Position = UDim2.new(0, 0, 0, 0)
+profileTopStroke.BackgroundColor3 = theme.Stroke
+profileTopStroke.BorderSizePixel = 0
+profileTopStroke.Parent = profileFrame
+
+local avatarImage = Instance.new("ImageLabel")
+avatarImage.Size = UDim2.new(0, 42, 0, 42)
+avatarImage.Position = UDim2.new(0, 12, 0.5, -21)
+avatarImage.BackgroundColor3 = theme.Background
+avatarImage.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+avatarImage.Parent = profileFrame
+applyCorner(avatarImage, 21)
+applyStroke(avatarImage, theme.Stroke, 1)
+
+local nameLabel = Instance.new("TextLabel")
+nameLabel.Size = UDim2.new(0, 140, 0, 20)
+nameLabel.Position = UDim2.new(0, 65, 0, 15)
+nameLabel.BackgroundTransparency = 1
+nameLabel.Text = player.DisplayName
+nameLabel.TextColor3 = theme.TextPrimary
+nameLabel.Font = Enum.Font.GothamBold
+nameLabel.TextSize = 14
+nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+nameLabel.Parent = profileFrame
+
+local userLabel = Instance.new("TextLabel")
+userLabel.Size = UDim2.new(0, 140, 0, 15)
+userLabel.Position = UDim2.new(0, 65, 0, 38)
+userLabel.BackgroundTransparency = 1
+userLabel.Text = "@" .. player.Name
+userLabel.TextColor3 = theme.TextSecondary
+userLabel.Font = Enum.Font.Gotham
+userLabel.TextSize = 12
+userLabel.TextXAlignment = Enum.TextXAlignment.Left
+userLabel.Parent = profileFrame
+
+local contentArea = Instance.new("Frame")
+contentArea.Size = UDim2.new(1, -221, 1, -50)
+contentArea.Position = UDim2.new(0, 221, 0, 50)
+contentArea.BackgroundColor3 = theme.Background
+contentArea.BorderSizePixel = 0
+contentArea.Parent = mainFrame
+applyCorner(contentArea, 12)
+
+local contentCoverLeft = Instance.new("Frame")
+contentCoverLeft.Size = UDim2.new(0, 12, 1, 0)
+contentCoverLeft.BackgroundColor3 = theme.Background
+contentCoverLeft.BorderSizePixel = 0
+contentCoverLeft.Parent = contentArea
+
+local contentCoverTop = Instance.new("Frame")
+contentCoverTop.Size = UDim2.new(1, 0, 0, 12)
+contentCoverTop.BackgroundColor3 = theme.Background
+contentCoverTop.BorderSizePixel = 0
+contentCoverTop.Parent = contentArea
+
+local tabs = {}
+local activeTab = nil
+
+local function createTab(name, iconId)
+	local tabBtn = Instance.new("TextButton")
+	tabBtn.Size = UDim2.new(1, -24, 0, 42)
+	tabBtn.BackgroundColor3 = theme.TabInactive
+	tabBtn.Text = ""
+	tabBtn.AutoButtonColor = false
+	tabBtn.Parent = tabContainer
+	applyCorner(tabBtn, 8)
+	local tabStroke = applyStroke(tabBtn, theme.Stroke, 1)
+	
+	local icon = Instance.new("ImageLabel")
+	icon.Size = UDim2.new(0, 20, 0, 20)
+	icon.Position = UDim2.new(0, 15, 0.5, -10)
+	icon.BackgroundTransparency = 1
+	icon.Image = iconId
+	icon.ImageColor3 = theme.TextSecondary
+	icon.Parent = tabBtn
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -50, 1, 0)
+	label.Position = UDim2.new(0, 45, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name
+	label.TextColor3 = theme.TextSecondary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = tabBtn
+	
+	local activeIndicator = Instance.new("Frame")
+	activeIndicator.Size = UDim2.new(0, 4, 0, 20)
+	activeIndicator.Position = UDim2.new(0, 0, 0.5, -10)
+	activeIndicator.BackgroundColor3 = theme.Accent
+	activeIndicator.BorderSizePixel = 0
+	activeIndicator.BackgroundTransparency = 1
+	activeIndicator.Parent = tabBtn
+	applyCorner(activeIndicator, 2)
+	
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.BackgroundTransparency = 1
+	page.BorderSizePixel = 0
+	page.ScrollBarThickness = 4
+	page.ScrollBarImageColor3 = theme.ItemBG
+	page.Visible = false
+	page.Parent = contentArea
+	
+	local pageLayout = Instance.new("UIListLayout")
+	pageLayout.Parent = page
+	pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	pageLayout.Padding = UDim.new(0, 15)
+	
+	local pagePadding = Instance.new("UIPadding")
+	pagePadding.Parent = page
+	pagePadding.PaddingTop = UDim.new(0, 20)
+	pagePadding.PaddingLeft = UDim.new(0, 25)
+	pagePadding.PaddingRight = UDim.new(0, 25)
+	pagePadding.PaddingBottom = UDim.new(0, 20)
+	
+	pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		page.CanvasSize = UDim2.new(0, 0, 0, pageLayout.AbsoluteContentSize.Y + 40)
+	end)
+	
+	tabBtn.MouseEnter:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.ItemHover}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+			TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.TextPrimary}):Play()
+			TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.TextSecondary}):Play()
+		end
+	end)
+	
+	tabBtn.MouseLeave:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.Stroke}):Play()
+		end
+	end)
+	
+	tabBtn.MouseButton1Click:Connect(function()
+		if activeTab == tabBtn then return end
+		if activeTab then
+			local prevStroke = activeTab:FindFirstChildOfClass("UIStroke")
+			TweenService:Create(activeTab, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(activeTab:FindFirstChild("TextLabel"), TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(activeTab:FindFirstChild("ImageLabel"), TweenInfo.new(0.2), {ImageColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(activeTab:FindFirstChild("Frame"), TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+			if prevStroke then
+				TweenService:Create(prevStroke, TweenInfo.new(0.2), {Color = theme.Stroke}):Play()
+			end
+			tabs[activeTab].Visible = false
+		end
+		
+		activeTab = tabBtn
+		TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabActive}):Play()
+		TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+		TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.Accent}):Play()
+		TweenService:Create(activeIndicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+		TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.Accent}):Play()
+		page.Visible = true
+	end)
+	
+	tabs[tabBtn] = page
+	
+	if not activeTab then
+		activeTab = tabBtn
+		tabBtn.BackgroundColor3 = theme.TabActive
+		label.TextColor3 = theme.TextPrimary
+		icon.ImageColor3 = theme.Accent
+		activeIndicator.BackgroundTransparency = 0
+		tabStroke.Color = theme.Accent
+		page.Visible = true
+	end
+	
+	return page
+end
+
+local function createSection(page, title)
+	local sectionFrame = Instance.new("Frame")
+	sectionFrame.Size = UDim2.new(1, 0, 0, 45)
+	sectionFrame.BackgroundColor3 = theme.ItemBG
+	sectionFrame.Parent = page
+	applyCorner(sectionFrame, 8)
+	applyStroke(sectionFrame, theme.Stroke, 1)
+	
+	local headerBtn = Instance.new("TextButton")
+	headerBtn.Size = UDim2.new(1, 0, 0, 45)
+	headerBtn.BackgroundTransparency = 1
+	headerBtn.Text = ""
+	headerBtn.Parent = sectionFrame
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -30, 1, 0)
+	titleLabel.Position = UDim2.new(0, 15, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = theme.TextPrimary
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 15
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = headerBtn
+	
+	local highlightBar = Instance.new("Frame")
+	highlightBar.Size = UDim2.new(0, 4, 0, 20)
+	highlightBar.Position = UDim2.new(0, 0, 0.5, -10)
+	highlightBar.BackgroundColor3 = theme.Accent
+	highlightBar.BorderSizePixel = 0
+	highlightBar.Parent = headerBtn
+	applyCorner(highlightBar, 2)
+	
+	local chevron = Instance.new("ImageLabel")
+	chevron.Size = UDim2.new(0, 20, 0, 20)
+	chevron.Position = UDim2.new(1, -30, 0.5, -10)
+	chevron.BackgroundTransparency = 1
+	chevron.Image = "rbxassetid://130746061687765"
+	chevron.ImageColor3 = theme.TextSecondary
+	chevron.Rotation = 180
+	chevron.Parent = headerBtn
+	
+	local contentFrame = Instance.new("Frame")
+	contentFrame.Size = UDim2.new(1, 0, 0, 0)
+	contentFrame.Position = UDim2.new(0, 0, 0, 45)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.ClipsDescendants = true
+	contentFrame.Parent = sectionFrame
+	
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Parent = contentFrame
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Padding = UDim.new(0, 10)
+	
+	local contentPadding = Instance.new("UIPadding")
+	contentPadding.Parent = contentFrame
+	contentPadding.PaddingTop = UDim.new(0, 5)
+	contentPadding.PaddingLeft = UDim.new(0, 15)
+	contentPadding.PaddingRight = UDim.new(0, 15)
+	contentPadding.PaddingBottom = UDim.new(0, 15)
+	
+	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		if chevron.Rotation == 180 then
+			local newHeight = contentLayout.AbsoluteContentSize.Y + 20
+			contentFrame.Size = UDim2.new(1, 0, 0, newHeight)
+			sectionFrame.Size = UDim2.new(1, 0, 0, newHeight + 45)
+		end
+	end)
+	
+	local isOpen = true
+	headerBtn.MouseButton1Click:Connect(function()
+		isOpen = not isOpen
+		if isOpen then
+			TweenService:Create(chevron, TweenInfo.new(0.3), {Rotation = 180}):Play()
+			local newHeight = contentLayout.AbsoluteContentSize.Y + 20
+			TweenService:Create(contentFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, newHeight)}):Play()
+			TweenService:Create(sectionFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, newHeight + 45)}):Play()
+		else
+			TweenService:Create(chevron, TweenInfo.new(0.3), {Rotation = 0}):Play()
+			TweenService:Create(contentFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+			TweenService:Create(sectionFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 45)}):Play()
+		end
+	end)
+	
+	return contentFrame
+end
+
+local function createLabel(parent, text, customColor)
+	local labelContainer = Instance.new("Frame")
+	labelContainer.Size = UDim2.new(1, 0, 0, 38)
+	labelContainer.BackgroundColor3 = theme.Sidebar
+	labelContainer.Parent = parent
+	applyCorner(labelContainer, 8)
+	applyStroke(labelContainer, theme.Stroke, 1)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -20, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = customColor or theme.TextPrimary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = labelContainer
+	
+	return label
+end
+
+local function createInput(parent, placeholder)
+	local inputContainer = Instance.new("Frame")
+	inputContainer.Size = UDim2.new(1, 0, 0, 42)
+	inputContainer.BackgroundColor3 = theme.Sidebar
+	inputContainer.Parent = parent
+	applyCorner(inputContainer, 8)
+	applyStroke(inputContainer, theme.Stroke, 1)
+	
+	local box = Instance.new("TextBox")
+	box.Size = UDim2.new(1, -20, 1, 0)
+	box.Position = UDim2.new(0, 10, 0, 0)
+	box.BackgroundTransparency = 1
+	box.Text = ""
+	box.PlaceholderText = placeholder
+	box.TextColor3 = theme.Gold
+	box.PlaceholderColor3 = theme.TextSecondary
+	box.Font = Enum.Font.GothamBold
+	box.TextSize = 14
+	box.TextXAlignment = Enum.TextXAlignment.Left
+	box.ClearTextOnFocus = false
+	box.Parent = inputContainer
+	
+	return box
+end
+
+local function createButton(parent, text, color, callback)
+	local btnContainer = Instance.new("Frame")
+	btnContainer.Size = UDim2.new(1, 0, 0, 42)
+	btnContainer.BackgroundColor3 = theme.Sidebar
+	btnContainer.Parent = parent
+	applyCorner(btnContainer, 8)
+	
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 1, 0)
+	btn.Position = UDim2.new(0, 0, 0, 0)
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.AutoButtonColor = true
+	btn.Parent = btnContainer
+	applyCorner(btn, 8)
+	applyStroke(btn, theme.Stroke, 1)
+	
+	btn.MouseButton1Click:Connect(function()
+		if callback then callback() end
+	end)
+	return btn
+end
+
+local function createLogCard(parent, pName, purchasedId)
+	local card = Instance.new("Frame")
+	card.Size = UDim2.new(1, 0, 0, 60)
+	card.BackgroundColor3 = theme.Sidebar
+	card.Parent = parent
+	applyCorner(card, 8)
+	applyStroke(card, theme.Stroke, 1)
+	
+	local nameLabelLog = Instance.new("TextLabel")
+	nameLabelLog.Size = UDim2.new(1, -100, 0, 20)
+	nameLabelLog.Position = UDim2.new(0, 15, 0, 10)
+	nameLabelLog.BackgroundTransparency = 1
+	nameLabelLog.Text = pName
+	nameLabelLog.TextColor3 = theme.TextPrimary
+	nameLabelLog.Font = Enum.Font.GothamBold
+	nameLabelLog.TextSize = 14
+	nameLabelLog.TextXAlignment = Enum.TextXAlignment.Left
+	nameLabelLog.Parent = card
+	
+	local idLabel = Instance.new("TextLabel")
+	idLabel.Size = UDim2.new(1, -100, 0, 20)
+	idLabel.Position = UDim2.new(0, 15, 0, 30)
+	idLabel.BackgroundTransparency = 1
+	idLabel.Text = tostring(purchasedId)
+	idLabel.TextColor3 = theme.Gold
+	idLabel.Font = Enum.Font.GothamBold
+	idLabel.TextSize = 14
+	idLabel.TextXAlignment = Enum.TextXAlignment.Left
+	idLabel.Parent = card
+	
+	local copyBtn = Instance.new("TextButton")
+	copyBtn.Size = UDim2.new(0, 70, 0, 30)
+	copyBtn.Position = UDim2.new(1, -85, 0.5, -15)
+	copyBtn.BackgroundColor3 = theme.ItemBG
+	copyBtn.Text = "Copy ID"
+	copyBtn.TextColor3 = theme.TextPrimary
+	copyBtn.Font = Enum.Font.GothamBold
+	copyBtn.TextSize = 12
+	copyBtn.Parent = card
+	applyCorner(copyBtn, 6)
+	applyStroke(copyBtn, theme.Stroke, 1)
+	
+	copyBtn.MouseButton1Click:Connect(function()
+		pcall(function()
+			if setclipboard then
+				setclipboard(tostring(purchasedId))
+			end
+		end)
+		
+		local originalText = copyBtn.Text
+		copyBtn.Text = "Copied!"
+		copyBtn.TextColor3 = theme.Success
+		TweenService:Create(copyBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.ItemHover}):Play()
+		
+		task.delay(1, function()
+			copyBtn.Text = originalText
+			copyBtn.TextColor3 = theme.TextPrimary
+			TweenService:Create(copyBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.ItemBG}):Play()
+		end)
+	end)
+end
+
+local pageAction = createTab("Action", "rbxassetid://137577418512694")
+local pageListener = createTab("Listener", "rbxassetid://91865132860715")
+local pageScanner = createTab("Scanner", "rbxassetid://95995379265657")
+
+local secConfig = createSection(pageAction, "Configuration")
+local productIdInputBox = createInput(secConfig, "Enter Product ID here...")
+createLabel(secConfig, "! This won't actually purchase the product, This just fakes it.", theme.Warning)
+
+local secSignals = createSection(pageAction, "Faker Signals")
+
+createButton(secSignals, "Signal Product", theme.Accent, function()
+	local productID = tonumber(productIdInputBox.Text)
+	if not productID then return end
+	MarketplaceService:SignalPromptProductPurchaseFinished(player.UserId, productID, true)
+end)
+
+createButton(secSignals, "Signal Gamepass", theme.Accent, function()
+	local productID = tonumber(productIdInputBox.Text)
+	if not productID then return end
+	MarketplaceService:SignalPromptGamePassPurchaseFinished(player, productID, true)
+end)
+
+createButton(secSignals, "Signal Bulk", theme.Accent, function()
+	local productID = tonumber(productIdInputBox.Text)
+	if not productID then return end
+	MarketplaceService:SignalPromptBulkPurchaseFinished(player.UserId, productID, true)
+end)
+
+createButton(secSignals, "Signal Purchase", theme.Accent, function()
+	local productID = tonumber(productIdInputBox.Text)
+	if not productID then return end
+	MarketplaceService:SignalPromptPurchaseFinished(player.UserId, productID, true)
+end)
+
+local secLogs = createSection(pageListener, "Captured Prompts")
+
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(plrId, purchasedId, wasPurchased)
+	local pName = player.Name
+	if plrId ~= player.UserId then
+		pcall(function()
+			pName = Players:GetNameFromUserIdAsync(plrId)
+		end)
+	end
+	createLogCard(secLogs, pName, purchasedId)
+end)
+
+local secScanner = createSection(pageScanner, "Game Scanner")
+createLabel(secScanner, "Scanner functionality offline.")
