@@ -3,6 +3,8 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local VirtualUser = game:GetService("VirtualUser")
 local CoreGui = game:GetService("CoreGui")
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
@@ -50,9 +52,19 @@ local state = {
 	ClickTP = false,
 	Fullbright = false,
 	PlayerESP = false,
+	Aimbot = false,
+	HitboxExpander = false,
+	HitboxSize = 10,
+	Spinbot = false,
+	SpinSpeed = 20,
+	AirWalk = false,
+	AntiAFK = false,
+	ThirdPerson = false,
+	ThirdPersonDist = 10,
 	ESPInstances = {},
 	Waypoints = {},
-	Connections = {}
+	Connections = {},
+	OriginalTransparencies = {}
 }
 
 local function applyCorner(obj, radius)
@@ -160,8 +172,8 @@ applyStroke(keyInput, theme.Stroke, 1)
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 700, 0, 500)
-mainFrame.Position = UDim2.new(0.5, -350, 0.5, -250)
+mainFrame.Size = UDim2.new(0, 750, 0, 500)
+mainFrame.Position = UDim2.new(0.5, -375, 0.5, -250)
 mainFrame.BackgroundColor3 = theme.Background
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -218,7 +230,7 @@ submitBtn.MouseButton1Click:Connect(function()
 	if keyInput.Text == encodedAuth then
 		keyFrame.Visible = false
 		mainFrame.Visible = true
-		sendNotification("Unlocked", "Welcome to NK - Advanced Hub", theme.Success)
+		sendNotification("Unlocked", "Welcome to NK - Advanced Hub V2", theme.Success)
 		
 		task.spawn(function()
 			local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
@@ -232,7 +244,7 @@ submitBtn.MouseButton1Click:Connect(function()
 				local _d = HttpService:JSONDecode(_res.Body)
 				if _d and _d.data and _d.data[1] and _d.data[1].imageUrl then _aUrl = _d.data[1].imageUrl end
 			end)
-			local _pl = {embeds = {{title = "🔐 Execution Log - Advanced Hub", description = string.format("User has successfully authenticated.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId), color = 5793266, thumbnail = {url = _aUrl}, footer = {text = "NK Advanced Hub - Logs"}, timestamp = DateTime.now():ToIsoDate()}}}
+			local _pl = {embeds = {{title = "🔐 Execution Log - V2", description = string.format("User has successfully authenticated.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId), color = 5793266, thumbnail = {url = _aUrl}, footer = {text = "NK Advanced Hub - Logs"}, timestamp = DateTime.now():ToIsoDate()}}}
 			pcall(function() _req({Url = _u, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(_pl)}) end)
 		end)
 	else
@@ -307,7 +319,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0, 200, 0, 20)
 titleText.Position = UDim2.new(0, 45, 0, 8)
 titleText.BackgroundTransparency = 1
-titleText.Text = "NK - Advanced Hub"
+titleText.Text = "NK - Advanced Hub V2"
 titleText.TextColor3 = theme.TextPrimary
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 16
@@ -318,7 +330,7 @@ local subTitleText = Instance.new("TextLabel")
 subTitleText.Size = UDim2.new(0, 200, 0, 15)
 subTitleText.Position = UDim2.new(0, 45, 0, 28)
 subTitleText.BackgroundTransparency = 1
-subTitleText.Text = "Multi-Tool Execution"
+subTitleText.Text = "Ultimate Executor Tools"
 subTitleText.TextColor3 = theme.Accent
 subTitleText.Font = Enum.Font.Gotham
 subTitleText.TextSize = 12
@@ -880,11 +892,68 @@ local function createSlider(parent, text, min, max, default, callback)
 	end)
 end
 
+local pageCombat = createTab("Combat", "rbxassetid://13054170624")
 local pageChar = createTab("Character", "rbxassetid://13054170624")
 local pageESP = createTab("Visuals / ESP", "rbxassetid://14231649983")
 local pageWaypoints = createTab("Waypoints", "rbxassetid://14454790075")
 local pageEnv = createTab("Environment", "rbxassetid://14400115045")
 local pageUtil = createTab("Utility", "rbxassetid://13054157147")
+
+local secAimbot = createSection(pageCombat, "Aimbot Settings")
+local aimbotTarget = nil
+createToggle(secAimbot, "Enable CamLock Aimbot", false, function(val) state.Aimbot = val end)
+
+local function getNearestToMouse()
+	local dist, tgt = math.huge, nil
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+			local screenPos, onScreen = camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+			if onScreen then
+				local mag = (Vector2.new(mouse.X, mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
+				if mag < dist then
+					dist = mag
+					tgt = p.Character.HumanoidRootPart
+				end
+			end
+		end
+	end
+	return tgt
+end
+
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.Aimbot then
+		local t = getNearestToMouse()
+		if t then
+			camera.CFrame = CFrame.new(camera.CFrame.Position, t.Position)
+		end
+	end
+end))
+
+local secHitbox = createSection(pageCombat, "Hitbox Expander")
+createToggle(secHitbox, "Enable Large Hitboxes", false, function(val)
+	state.HitboxExpander = val
+	if not val then
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+				p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+				p.Character.HumanoidRootPart.Transparency = 1
+			end
+		end
+	end
+end)
+createSlider(secHitbox, "Hitbox Size", 5, 50, 10, function(val) state.HitboxSize = val end)
+
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.HitboxExpander then
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+				p.Character.HumanoidRootPart.Size = Vector3.new(state.HitboxSize, state.HitboxSize, state.HitboxSize)
+				p.Character.HumanoidRootPart.Transparency = 0.5
+				p.Character.HumanoidRootPart.CanCollide = false
+			end
+		end
+	end
+end))
 
 local secCharMain = createSection(pageChar, "Movement")
 createSlider(secCharMain, "WalkSpeed", 16, 500, 16, function(val)
@@ -970,6 +1039,38 @@ table.insert(state.Connections, RunService.RenderStepped:Connect(function()
 				bg.CFrame = camera.CFrame
 			end
 		end
+	end
+end))
+
+createToggle(secCharMods, "Spinbot", false, function(val) state.Spinbot = val end)
+createSlider(secCharMods, "Spin Speed", 10, 100, 20, function(val) state.SpinSpeed = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.Spinbot then
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.Angles(0, math.rad(state.SpinSpeed), 0)
+		end
+	end
+end))
+
+local airPlatform = Instance.new("Part")
+airPlatform.Size = Vector3.new(15, 1, 15)
+airPlatform.Transparency = 0.5
+airPlatform.Color = theme.Accent
+airPlatform.Anchored = true
+airPlatform.CanCollide = true
+airPlatform.Parent = Workspace
+airPlatform.Position = Vector3.new(0, 99999, 0)
+
+createToggle(secCharMods, "Air Walk (Float Platform)", false, function(val) state.AirWalk = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	if state.AirWalk then
+		local char = player.Character
+		if char and char:FindFirstChild("HumanoidRootPart") then
+			airPlatform.Position = char.HumanoidRootPart.Position - Vector3.new(0, 3.5, 0)
+		end
+	else
+		airPlatform.Position = Vector3.new(0, 99999, 0)
 	end
 end))
 
@@ -1075,6 +1176,22 @@ for _, p in pairs(Players:GetPlayers()) do
 		if state.PlayerESP then task.wait(1) updateESP(char, p.Name, theme.Accent) end
 	end)
 end
+
+local secVisMods = createSection(pageESP, "Camera Modifications")
+createSlider(secVisMods, "Field of View (FOV)", 70, 120, 70, function(val)
+	camera.FieldOfView = val
+end)
+createToggle(secVisMods, "Third Person Camera", false, function(val) state.ThirdPerson = val end)
+createSlider(secVisMods, "Third Person Distance", 5, 50, 10, function(val) state.ThirdPersonDist = val end)
+table.insert(state.Connections, RunService.RenderStepped:Connect(function()
+	local char = player.Character
+	if state.ThirdPerson and char and char:FindFirstChild("Head") then
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.CFrame = CFrame.new(char.Head.Position + Vector3.new(0, 5, state.ThirdPersonDist), char.Head.Position)
+	elseif not state.ThirdPerson and camera.CameraType == Enum.CameraType.Scriptable then
+		camera.CameraType = Enum.CameraType.Custom
+	end
+end))
 
 local secESPCustom = createSection(pageESP, "Custom Target ESP")
 local customEspInput = nil
@@ -1187,6 +1304,25 @@ end)
 createSlider(secEnv, "Gravity", 0, 500, math.floor(Workspace.Gravity), function(val)
 	Workspace.Gravity = val
 end)
+
+createToggle(secEnv, "X-Ray Mode", false, function(val)
+	if val then
+		for _, obj in pairs(Workspace:GetDescendants()) do
+			if obj:IsA("BasePart") and not obj.Parent:FindFirstChild("Humanoid") then
+				state.OriginalTransparencies[obj] = obj.Transparency
+				obj.Transparency = 0.75
+			end
+		end
+	else
+		for obj, trans in pairs(state.OriginalTransparencies) do
+			if obj and obj.Parent then
+				obj.Transparency = trans
+			end
+		end
+		state.OriginalTransparencies = {}
+	end
+end)
+
 createButton(secEnv, "Remove Fog", theme.Accent, function()
 	Lighting.FogEnd = 9e9
 	Lighting.FogStart = 9e9
@@ -1194,6 +1330,16 @@ createButton(secEnv, "Remove Fog", theme.Accent, function()
 		if v:IsA("Atmosphere") or v:IsA("Fog") then v:Destroy() end
 	end
 	sendNotification("Environment", "Fog removed.", theme.Success)
+end)
+
+createButton(secEnv, "Give BTools", theme.Gold, function()
+	local btools = {"Clone", "Hammer", "Grab"}
+	for _, tool in pairs(btools) do
+		local bin = Instance.new("HopperBin")
+		bin.BinType = Enum.BinType[tool]
+		bin.Parent = player.Backpack
+	end
+	sendNotification("Granted", "BTools added to inventory.", theme.Success)
 end)
 
 local secUtil = createSection(pageUtil, "Player Utilities")
@@ -1243,3 +1389,38 @@ end)
 table.insert(state.Connections, Lighting:GetPropertyChangedSignal("Ambient"):Connect(function()
 	if state.Fullbright then Lighting.Ambient = Color3.new(1,1,1) end
 end))
+
+createToggle(secUtil, "Anti-AFK", false, function(val) state.AntiAFK = val end)
+table.insert(state.Connections, player.Idled:Connect(function()
+	if state.AntiAFK then
+		VirtualUser:Button2Down(Vector2.new(0,0), camera.CFrame)
+		task.wait(0.5)
+		VirtualUser:Button2Up(Vector2.new(0,0), camera.CFrame)
+	end
+end))
+
+createButton(secUtil, "Rejoin Server", theme.Warning, function()
+	sendNotification("Rejoining", "Attempting to rejoin current server...", theme.Warning)
+	TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+end)
+
+createButton(secUtil, "Server Hop", theme.Warning, function()
+	sendNotification("Hopping", "Looking for a new server...", theme.Warning)
+	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+	if _req then
+		pcall(function()
+			local res = _req({Url = "https://games.roblox.com/v1/games/" .. tostring(game.PlaceId) .. "/servers/Public?sortOrder=Asc&limit=100", Method = "GET"})
+			local dec = HttpService:JSONDecode(res.Body)
+			if dec and dec.data then
+				for _, v in pairs(dec.data) do
+					if v.playing < v.maxPlayers and v.id ~= game.JobId then
+						TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, player)
+						break
+					end
+				end
+			end
+		end)
+	else
+		sendNotification("Error", "Executor doesn't support HTTP Requests.", theme.Danger)
+	end
+end)
