@@ -50,6 +50,61 @@ local function applyStroke(obj, color, thickness)
 	return stroke
 end
 
+local notifContainer = Instance.new("Frame")
+notifContainer.Name = "NotifContainer"
+notifContainer.Size = UDim2.new(0, 300, 1, -20)
+notifContainer.Position = UDim2.new(1, -320, 0, 10)
+notifContainer.BackgroundTransparency = 1
+notifContainer.Parent = screenGui
+
+local notifLayout = Instance.new("UIListLayout")
+notifLayout.Parent = notifContainer
+notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+notifLayout.Padding = UDim.new(0, 10)
+
+local function sendNotification(title, desc, color)
+	local notif = Instance.new("Frame")
+	notif.Size = UDim2.new(1, 0, 0, 60)
+	notif.BackgroundColor3 = theme.Sidebar
+	notif.Position = UDim2.new(1, 350, 0, 0)
+	notif.Parent = notifContainer
+	applyCorner(notif, 8)
+	applyStroke(notif, color or theme.Accent, 1)
+	
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -20, 0, 25)
+	titleLbl.Position = UDim2.new(0, 10, 0, 5)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = title
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 14
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = notif
+	
+	local descLbl = Instance.new("TextLabel")
+	descLbl.Size = UDim2.new(1, -20, 0, 20)
+	descLbl.Position = UDim2.new(0, 10, 0, 30)
+	descLbl.BackgroundTransparency = 1
+	descLbl.Text = desc
+	descLbl.TextColor3 = color or theme.TextSecondary
+	descLbl.Font = Enum.Font.Gotham
+	descLbl.TextSize = 12
+	descLbl.TextXAlignment = Enum.TextXAlignment.Left
+	descLbl.Parent = notif
+
+	TweenService:Create(notif, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+	
+	task.spawn(function()
+		task.wait(4)
+		local twOut = TweenService:Create(notif, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 350, 0, 0)})
+		twOut:Play()
+		twOut.Completed:Wait()
+		notif:Destroy()
+	end)
+end
+
 local keyFrame = Instance.new("Frame")
 keyFrame.Name = "KeyFrame"
 keyFrame.Size = UDim2.new(0, 350, 0, 200)
@@ -99,22 +154,29 @@ local mainScale = Instance.new("UIScale")
 mainScale.Parent = mainFrame
 mainScale.Scale = 1
 
-local floatIcon = Instance.new("ImageButton")
-floatIcon.Size = UDim2.new(0, 50, 0, 50)
-floatIcon.Position = UDim2.new(1, -70, 1, -160)
-floatIcon.BackgroundColor3 = theme.Sidebar
-floatIcon.Image = "rbxassetid://16884179279"
-floatIcon.ImageColor3 = theme.Accent
-floatIcon.Visible = false
-floatIcon.Parent = screenGui
-applyCorner(floatIcon, 25)
-applyStroke(floatIcon, theme.Accent, 2)
+local floatIconBtn = Instance.new("ImageButton")
+floatIconBtn.Size = UDim2.new(0, 50, 0, 50)
+floatIconBtn.Position = UDim2.new(1, -70, 1, -160)
+floatIconBtn.BackgroundColor3 = theme.Sidebar
+floatIconBtn.Visible = false
+floatIconBtn.Parent = screenGui
+applyCorner(floatIconBtn, 25)
+applyStroke(floatIconBtn, theme.Accent, 2)
 
-floatIcon.MouseButton1Click:Connect(function()
-	local twOut = TweenService:Create(floatIcon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+local floatIconImg = Instance.new("ImageLabel")
+floatIconImg.Size = UDim2.new(0, 24, 0, 24)
+floatIconImg.Position = UDim2.new(0.5, -12, 0.5, -12)
+floatIconImg.BackgroundTransparency = 1
+floatIconImg.Image = "rbxassetid://16167590360"
+floatIconImg.ImageRectSize = Vector2.new(16, 16)
+floatIconImg.ImageRectOffset = Vector2.new(253, 492)
+floatIconImg.Parent = floatIconBtn
+
+floatIconBtn.MouseButton1Click:Connect(function()
+	local twOut = TweenService:Create(floatIconBtn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
 	twOut:Play()
 	twOut.Completed:Wait()
-	floatIcon.Visible = false
+	floatIconBtn.Visible = false
 	mainFrame.Visible = true
 	mainScale.Scale = 0
 	TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
@@ -136,6 +198,7 @@ submitBtn.MouseButton1Click:Connect(function()
 	if keyInput.Text == encodedAuth then
 		keyFrame.Visible = false
 		mainFrame.Visible = true
+		sendNotification("Unlocked", "Welcome to Product Faker", theme.Success)
 	else
 		keyInput.Text = "Invalid Key!"
 		task.wait(1)
@@ -202,16 +265,17 @@ topbarBottomStroke.BorderSizePixel = 0
 topbarBottomStroke.Parent = topbar
 
 local titleIcon = Instance.new("ImageLabel")
-titleIcon.Size = UDim2.new(0, 26, 0, 26)
-titleIcon.Position = UDim2.new(0, 15, 0.5, -13)
+titleIcon.Size = UDim2.new(0, 20, 0, 20)
+titleIcon.Position = UDim2.new(0, 15, 0.5, -10)
 titleIcon.BackgroundTransparency = 1
 titleIcon.Image = "rbxassetid://16167590360"
-titleIcon.ImageColor3 = theme.Accent
+titleIcon.ImageRectSize = Vector2.new(16, 16)
+titleIcon.ImageRectOffset = Vector2.new(253, 492)
 titleIcon.Parent = topbar
 
 local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0, 200, 0, 20)
-titleText.Position = UDim2.new(0, 55, 0, 8)
+titleText.Position = UDim2.new(0, 45, 0, 8)
 titleText.BackgroundTransparency = 1
 titleText.Text = "Product Faker"
 titleText.TextColor3 = theme.TextPrimary
@@ -222,9 +286,9 @@ titleText.Parent = topbar
 
 local subTitleText = Instance.new("TextLabel")
 subTitleText.Size = UDim2.new(0, 200, 0, 15)
-subTitleText.Position = UDim2.new(0, 55, 0, 28)
+subTitleText.Position = UDim2.new(0, 45, 0, 28)
 subTitleText.BackgroundTransparency = 1
-subTitleText.Text = "By esore | Styled by Neko"
+subTitleText.Text = "By esore | Advanced Version"
 subTitleText.TextColor3 = theme.Accent
 subTitleText.Font = Enum.Font.Gotham
 subTitleText.TextSize = 12
@@ -272,9 +336,9 @@ minimizeBtn.MouseButton1Click:Connect(function()
 	twIn:Play()
 	twIn.Completed:Wait()
 	mainFrame.Visible = false
-	floatIcon.Size = UDim2.new(0, 0, 0, 0)
-	floatIcon.Visible = true
-	TweenService:Create(floatIcon, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 50, 0, 50)}):Play()
+	floatIconBtn.Size = UDim2.new(0, 0, 0, 0)
+	floatIconBtn.Visible = true
+	TweenService:Create(floatIconBtn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 50, 0, 50)}):Play()
 end)
 
 local sidebar = Instance.new("Frame")
@@ -624,11 +688,20 @@ local function createInput(parent, placeholder)
 	inputContainer.BackgroundColor3 = theme.Sidebar
 	inputContainer.Parent = parent
 	applyCorner(inputContainer, 8)
-	applyStroke(inputContainer, theme.Stroke, 1)
+	local boxStroke = applyStroke(inputContainer, theme.Stroke, 1)
+	
+	local boxIcon = Instance.new("ImageLabel")
+	boxIcon.Size = UDim2.new(0, 16, 0, 16)
+	boxIcon.Position = UDim2.new(0, 12, 0.5, -8)
+	boxIcon.BackgroundTransparency = 1
+	boxIcon.Image = "rbxassetid://16167590360"
+	boxIcon.ImageRectSize = Vector2.new(16, 16)
+	boxIcon.ImageRectOffset = Vector2.new(253, 492)
+	boxIcon.Parent = inputContainer
 	
 	local box = Instance.new("TextBox")
-	box.Size = UDim2.new(1, -20, 1, 0)
-	box.Position = UDim2.new(0, 10, 0, 0)
+	box.Size = UDim2.new(1, -45, 1, 0)
+	box.Position = UDim2.new(0, 35, 0, 0)
 	box.BackgroundTransparency = 1
 	box.Text = ""
 	box.PlaceholderText = placeholder
@@ -639,6 +712,13 @@ local function createInput(parent, placeholder)
 	box.TextXAlignment = Enum.TextXAlignment.Left
 	box.ClearTextOnFocus = false
 	box.Parent = inputContainer
+
+	box.Focused:Connect(function()
+		TweenService:Create(boxStroke, TweenInfo.new(0.2), {Color = theme.Accent}):Play()
+	end)
+	box.FocusLost:Connect(function()
+		TweenService:Create(boxStroke, TweenInfo.new(0.2), {Color = theme.Stroke}):Play()
+	end)
 	
 	return box
 end
@@ -669,7 +749,7 @@ local function createButton(parent, text, color, callback)
 	return btn
 end
 
-local function createLogCard(parent, pName, purchasedId)
+local function createLogCard(parent, titleText, dataId)
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(1, 0, 0, 60)
 	card.BackgroundColor3 = theme.Sidebar
@@ -681,7 +761,7 @@ local function createLogCard(parent, pName, purchasedId)
 	nameLabelLog.Size = UDim2.new(1, -100, 0, 20)
 	nameLabelLog.Position = UDim2.new(0, 15, 0, 10)
 	nameLabelLog.BackgroundTransparency = 1
-	nameLabelLog.Text = pName
+	nameLabelLog.Text = titleText
 	nameLabelLog.TextColor3 = theme.TextPrimary
 	nameLabelLog.Font = Enum.Font.GothamBold
 	nameLabelLog.TextSize = 14
@@ -692,7 +772,7 @@ local function createLogCard(parent, pName, purchasedId)
 	idLabel.Size = UDim2.new(1, -100, 0, 20)
 	idLabel.Position = UDim2.new(0, 15, 0, 30)
 	idLabel.BackgroundTransparency = 1
-	idLabel.Text = tostring(purchasedId)
+	idLabel.Text = tostring(dataId)
 	idLabel.TextColor3 = theme.Gold
 	idLabel.Font = Enum.Font.GothamBold
 	idLabel.TextSize = 14
@@ -714,7 +794,7 @@ local function createLogCard(parent, pName, purchasedId)
 	copyBtn.MouseButton1Click:Connect(function()
 		pcall(function()
 			if setclipboard then
-				setclipboard(tostring(purchasedId))
+				setclipboard(tostring(dataId))
 			end
 		end)
 		
@@ -744,24 +824,28 @@ local secSignals = createSection(pageAction, "Faker Signals")
 createButton(secSignals, "Signal Product", theme.Accent, function()
 	local productID = tonumber(productIdInputBox.Text)
 	if not productID then return end
+	sendNotification("Signal Sent", "Hook triggered for Product: " .. productID, theme.Accent)
 	MarketplaceService:SignalPromptProductPurchaseFinished(player.UserId, productID, true)
 end)
 
 createButton(secSignals, "Signal Gamepass", theme.Accent, function()
 	local productID = tonumber(productIdInputBox.Text)
 	if not productID then return end
+	sendNotification("Signal Sent", "Hook triggered for Gamepass: " .. productID, theme.Accent)
 	MarketplaceService:SignalPromptGamePassPurchaseFinished(player, productID, true)
 end)
 
 createButton(secSignals, "Signal Bulk", theme.Accent, function()
 	local productID = tonumber(productIdInputBox.Text)
 	if not productID then return end
+	sendNotification("Signal Sent", "Hook triggered for Bulk: " .. productID, theme.Accent)
 	MarketplaceService:SignalPromptBulkPurchaseFinished(player.UserId, productID, true)
 end)
 
 createButton(secSignals, "Signal Purchase", theme.Accent, function()
 	local productID = tonumber(productIdInputBox.Text)
 	if not productID then return end
+	sendNotification("Signal Sent", "Hook triggered for Purchase: " .. productID, theme.Accent)
 	MarketplaceService:SignalPromptPurchaseFinished(player.UserId, productID, true)
 end)
 
@@ -774,8 +858,68 @@ MarketplaceService.PromptProductPurchaseFinished:Connect(function(plrId, purchas
 			pName = Players:GetNameFromUserIdAsync(plrId)
 		end)
 	end
-	createLogCard(secLogs, pName, purchasedId)
+	createLogCard(secLogs, "Product | " .. pName, purchasedId)
+	sendNotification("Captured!", "Someone triggered product: " .. purchasedId, theme.Gold)
+end)
+
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(plr, purchasedId, wasPurchased)
+	createLogCard(secLogs, "Gamepass | " .. plr.Name, purchasedId)
+	sendNotification("Captured!", "Someone triggered gamepass: " .. purchasedId, theme.Gold)
 end)
 
 local secScanner = createSection(pageScanner, "Game Scanner")
-createLabel(secScanner, "Scanner functionality offline.")
+local scannerResults = createSection(pageScanner, "Results")
+
+local function performScan()
+	for _, child in ipairs(scannerResults:GetChildren()) do
+		if child:IsA("Frame") and child.Name ~= "UIListLayout" and child.Name ~= "UIPadding" then
+			child:Destroy()
+		end
+	end
+
+	local foundItems = {}
+
+	local function checkInstance(inst)
+		local nameLower = string.lower(inst.Name)
+		if string.find(nameLower, "product") or string.find(nameLower, "gamepass") or string.find(nameLower, "pass") or string.find(nameLower, "id") then
+			if inst:IsA("IntValue") or inst:IsA("NumberValue") or inst:IsA("StringValue") then
+				local val = tonumber(inst.Value)
+				if val and val > 1000 then
+					foundItems[inst.Name] = val
+				end
+			end
+		end
+		
+		for attr, val in pairs(inst:GetAttributes()) do
+			local attrLower = string.lower(attr)
+			if string.find(attrLower, "product") or string.find(attrLower, "gamepass") or string.find(attrLower, "id") then
+				if type(val) == "number" and val > 1000 then
+					foundItems[inst.Name .. " [" .. attr .. "]"] = val
+				end
+			end
+		end
+	end
+
+	for _, v in ipairs(workspace:GetDescendants()) do
+		checkInstance(v)
+	end
+
+	for _, v in ipairs(playerGui:GetDescendants()) do
+		checkInstance(v)
+	end
+
+	local count = 0
+	for name, id in pairs(foundItems) do
+		createLogCard(scannerResults, name, id)
+		count = count + 1
+	end
+
+	if count == 0 then
+		createLabel(scannerResults, "No IDs found in workspace/gui.", theme.Warning)
+		sendNotification("Scan Complete", "No IDs were found.", theme.Danger)
+	else
+		sendNotification("Scan Complete", "Found " .. count .. " potential IDs.", theme.Success)
+	end
+end
+
+createButton(secScanner, "Start Scan (Workspace & GUI)", theme.Accent, performScan)
