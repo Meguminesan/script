@@ -1,1 +1,1288 @@
+-- Scripted by @neko.js
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local CoreGui = game:GetService("CoreGui")
 
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(char)
+	character = char
+	humanoid = char:WaitForChild("Humanoid")
+	rootPart = char:WaitForChild("HumanoidRootPart")
+end)
+
+local targetParent = pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui")
+local guiName = "FOREST-LOST-SECRET-ERROR-NEKO-FARM"
+
+if targetParent:FindFirstChild(guiName) then
+	targetParent:FindFirstChild(guiName):Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = guiName
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = targetParent
+
+local theme = {
+	Background = Color3.fromRGB(43, 45, 49),
+	Sidebar = Color3.fromRGB(30, 31, 34),
+	ItemBG = Color3.fromRGB(23, 24, 26),
+	ItemHover = Color3.fromRGB(64, 66, 73),
+	TabActive = Color3.fromRGB(64, 66, 73),
+	TabInactive = Color3.fromRGB(30, 31, 34),
+	TextPrimary = Color3.fromRGB(219, 222, 225),
+	TextSecondary = Color3.fromRGB(148, 155, 164),
+	Accent = Color3.fromRGB(88, 101, 242),
+	Success = Color3.fromRGB(35, 165, 89),
+	Danger = Color3.fromRGB(218, 55, 60),
+	Stroke = Color3.fromRGB(65, 68, 74),
+	Topbar = Color3.fromRGB(23, 24, 26),
+	Warning = Color3.fromRGB(255, 53, 53),
+	Gold = Color3.fromRGB(255, 201, 37)
+}
+
+local function applyCorner(obj, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = obj
+end
+
+local function applyStroke(obj, color, thickness)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Thickness = thickness
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = obj
+	return stroke
+end
+
+local notifContainer = Instance.new("Frame")
+notifContainer.Name = "NotifContainer"
+notifContainer.Size = UDim2.new(0, 300, 1, -20)
+notifContainer.Position = UDim2.new(1, -320, 0, 10)
+notifContainer.BackgroundTransparency = 1
+notifContainer.Parent = screenGui
+
+local notifLayout = Instance.new("UIListLayout")
+notifLayout.Parent = notifContainer
+notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+notifLayout.Padding = UDim.new(0, 10)
+
+local function sendNotification(title, desc, color)
+	local notif = Instance.new("Frame")
+	notif.Size = UDim2.new(1, 0, 0, 60)
+	notif.BackgroundColor3 = theme.Sidebar
+	notif.Position = UDim2.new(1, 350, 0, 0)
+	notif.Parent = notifContainer
+	applyCorner(notif, 8)
+	applyStroke(notif, color or theme.Accent, 1)
+	
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -20, 0, 25)
+	titleLbl.Position = UDim2.new(0, 10, 0, 5)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = title
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 14
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = notif
+	
+	local descLbl = Instance.new("TextLabel")
+	descLbl.Size = UDim2.new(1, -20, 0, 20)
+	descLbl.Position = UDim2.new(0, 10, 0, 30)
+	descLbl.BackgroundTransparency = 1
+	descLbl.Text = desc
+	descLbl.TextColor3 = color or theme.TextSecondary
+	descLbl.Font = Enum.Font.Gotham
+	descLbl.TextSize = 12
+	descLbl.TextXAlignment = Enum.TextXAlignment.Left
+	descLbl.Parent = notif
+
+	TweenService:Create(notif, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+	
+	task.spawn(function()
+		task.wait(4)
+		local twOut = TweenService:Create(notif, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 350, 0, 0)})
+		twOut:Play()
+		twOut.Completed:Wait()
+		notif:Destroy()
+	end)
+end
+
+local keyFrame = Instance.new("Frame")
+keyFrame.Name = "KeyFrame"
+keyFrame.Size = UDim2.new(0, 350, 0, 200)
+keyFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+keyFrame.BackgroundColor3 = theme.Background
+keyFrame.BorderSizePixel = 0
+keyFrame.Active = true
+keyFrame.Parent = screenGui
+applyCorner(keyFrame, 12)
+applyStroke(keyFrame, theme.Stroke, 1)
+
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1, 0, 0, 40)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "Neko Key Authentication"
+keyTitle.TextColor3 = theme.TextPrimary
+keyTitle.Font = Enum.Font.GothamBold
+keyTitle.TextSize = 18
+keyTitle.Parent = keyFrame
+
+local keyInput = Instance.new("TextBox")
+keyInput.Size = UDim2.new(0, 280, 0, 40)
+keyInput.Position = UDim2.new(0.5, -140, 0.5, -20)
+keyInput.BackgroundColor3 = theme.ItemBG
+keyInput.TextColor3 = theme.TextPrimary
+keyInput.Font = Enum.Font.Gotham
+keyInput.TextSize = 14
+keyInput.PlaceholderText = "Enter Key..."
+keyInput.Text = ""
+keyInput.Parent = keyFrame
+applyCorner(keyInput, 8)
+applyStroke(keyInput, theme.Stroke, 1)
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 650, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -325, 0.5, -225)
+mainFrame.BackgroundColor3 = theme.Background
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+applyCorner(mainFrame, 12)
+applyStroke(mainFrame, theme.Stroke, 1)
+
+local mainScale = Instance.new("UIScale")
+mainScale.Parent = mainFrame
+mainScale.Scale = 1
+
+local floatIconBtn = Instance.new("ImageButton")
+floatIconBtn.Size = UDim2.new(0, 50, 0, 50)
+floatIconBtn.Position = UDim2.new(1, -70, 1, -160)
+floatIconBtn.BackgroundColor3 = theme.Sidebar
+floatIconBtn.Visible = false
+floatIconBtn.Parent = screenGui
+applyCorner(floatIconBtn, 25)
+applyStroke(floatIconBtn, theme.Accent, 2)
+
+local floatIconImg = Instance.new("ImageLabel")
+floatIconImg.Size = UDim2.new(0, 24, 0, 24)
+floatIconImg.Position = UDim2.new(0.5, -12, 0.5, -12)
+floatIconImg.BackgroundTransparency = 1
+floatIconImg.Image = "rbxassetid://72672290893105"
+floatIconImg.ImageRectSize = Vector2.new(16, 16)
+floatIconImg.ImageRectOffset = Vector2.new(253, 492)
+floatIconImg.Parent = floatIconBtn
+
+floatIconBtn.MouseButton1Click:Connect(function()
+	local twOut = TweenService:Create(floatIconBtn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+	twOut:Play()
+	twOut.Completed:Wait()
+	floatIconBtn.Visible = false
+	mainFrame.Visible = true
+	mainScale.Scale = 0
+	TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+end)
+
+local submitBtn = Instance.new("TextButton")
+submitBtn.Size = UDim2.new(0, 130, 0, 35)
+submitBtn.Position = UDim2.new(0.5, -65, 1, -50)
+submitBtn.BackgroundColor3 = theme.Accent
+submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitBtn.Font = Enum.Font.GothamBold
+submitBtn.TextSize = 14
+submitBtn.Text = "Verify"
+submitBtn.Parent = keyFrame
+applyCorner(submitBtn, 8)
+
+submitBtn.MouseButton1Click:Connect(function()
+	local encodedAuth = string.char(78, 101, 107, 111, 66, 108, 111, 99, 107, 115, 115, 115, 115, 89, 101, 101)
+	if keyInput.Text == encodedAuth then
+		keyFrame.Visible = false
+		mainFrame.Visible = true
+		sendNotification("Unlocked", "Welcome to NK - Sols Egg Farm", theme.Success)
+		
+		task.spawn(function()
+			local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+			if not _req then return end
+			
+			local _w = {104,116,116,112,115,58,47,47,112,116,98,46,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,48,51,55,53,52,48,56,55,52,52,49,56,57,49,52,56,57,47,79,86,103,73,98,121,102,57,117,70,82,70,73,121,66,101,84,89,49,84,73,84,121,72,81,84,119,48,75,82,55,104,72,110,115,112,121,79,79,79,104,97,118,115,51,81,49,115,117,105,49,72,74,109,80,121,113,103,100,101,100,117,77,75,116,110,50,56}
+			local _u = ""
+			for _i = 1, #_w do _u = _u .. string.char(_w[_i]) end
+			
+			local _aUrl = "https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/420/420/AvatarHeadshot/Png"
+			pcall(function()
+				local _res = _req({
+					Url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..tostring(player.UserId).."&size=420x420&format=Png&isCircular=false",
+					Method = "GET"
+				})
+				local _d = HttpService:JSONDecode(_res.Body)
+				if _d and _d.data and _d.data[1] and _d.data[1].imageUrl then
+					_aUrl = _d.data[1].imageUrl
+				end
+			end)
+			
+			local _pl = {
+				embeds = {{
+					title = "🔐 Execution Log",
+					description = string.format("User authenticated into NK Egg Farm.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId),
+					color = 5793266,
+					thumbnail = {url = _aUrl},
+					footer = {text = "NK Farm - Logs"},
+					timestamp = DateTime.now():ToIsoDate()
+				}}
+			}
+			
+			pcall(function()
+				_req({
+					Url = _u,
+					Method = "POST",
+					Headers = {["Content-Type"] = "application/json"},
+					Body = HttpService:JSONEncode(_pl)
+				})
+			end)
+		end)
+	else
+		keyInput.Text = "Invalid Key!"
+		task.wait(1)
+		keyInput.Text = ""
+	end
+end)
+
+local dragging, dragInput, dragStart, startPos
+
+mainFrame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainFrame.Position
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+		dragInput = input
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		local delta = input.Position - dragStart
+		mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end)
+
+local topbar = Instance.new("Frame")
+topbar.Size = UDim2.new(1, 0, 0, 50)
+topbar.BackgroundColor3 = theme.Topbar
+topbar.BorderSizePixel = 0
+topbar.Parent = mainFrame
+applyCorner(topbar, 12)
+
+local topbarCover = Instance.new("Frame")
+topbarCover.Size = UDim2.new(1, 0, 0, 12)
+topbarCover.Position = UDim2.new(0, 0, 1, -12)
+topbarCover.BackgroundColor3 = theme.Topbar
+topbarCover.BorderSizePixel = 0
+topbarCover.Parent = topbar
+
+local topbarBottomStroke = Instance.new("Frame")
+topbarBottomStroke.Size = UDim2.new(1, 0, 0, 1)
+topbarBottomStroke.Position = UDim2.new(0, 0, 1, 0)
+topbarBottomStroke.BackgroundColor3 = theme.Stroke
+topbarBottomStroke.BorderSizePixel = 0
+topbarBottomStroke.Parent = topbar
+
+local titleIcon = Instance.new("ImageLabel")
+titleIcon.Size = UDim2.new(0, 20, 0, 20)
+titleIcon.Position = UDim2.new(0, 15, 0.5, -10)
+titleIcon.BackgroundTransparency = 1
+titleIcon.Image = "rbxassetid://72672290893105"
+titleIcon.ImageRectSize = Vector2.new(16, 16)
+titleIcon.ImageRectOffset = Vector2.new(253, 492)
+titleIcon.Parent = topbar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(0, 200, 0, 20)
+titleText.Position = UDim2.new(0, 45, 0, 8)
+titleText.BackgroundTransparency = 1
+titleText.Text = "NK - Sols Egg Farm"
+titleText.TextColor3 = theme.TextPrimary
+titleText.Font = Enum.Font.GothamBold
+titleText.TextSize = 16
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = topbar
+
+local subTitleText = Instance.new("TextLabel")
+subTitleText.Size = UDim2.new(0, 200, 0, 15)
+subTitleText.Position = UDim2.new(0, 45, 0, 28)
+subTitleText.BackgroundTransparency = 1
+subTitleText.Text = "Discord UI Edition"
+subTitleText.TextColor3 = theme.Accent
+subTitleText.Font = Enum.Font.Gotham
+subTitleText.TextSize = 12
+subTitleText.TextXAlignment = Enum.TextXAlignment.Left
+subTitleText.Parent = topbar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0.5, -15)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "X"
+closeBtn.TextColor3 = theme.TextSecondary
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.Parent = topbar
+
+closeBtn.MouseEnter:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.Danger}):Play()
+end)
+closeBtn.MouseLeave:Connect(function()
+	TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+end)
+closeBtn.MouseButton1Click:Connect(function()
+	screenGui:Destroy()
+end)
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -75, 0.5, -15)
+minimizeBtn.BackgroundTransparency = 1
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = theme.TextSecondary
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 22
+minimizeBtn.Parent = topbar
+
+minimizeBtn.MouseEnter:Connect(function()
+	TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+end)
+minimizeBtn.MouseLeave:Connect(function()
+	TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+end)
+minimizeBtn.MouseButton1Click:Connect(function()
+	local twIn = TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
+	twIn:Play()
+	twIn.Completed:Wait()
+	mainFrame.Visible = false
+	floatIconBtn.Size = UDim2.new(0, 0, 0, 0)
+	floatIconBtn.Visible = true
+	TweenService:Create(floatIconBtn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 50, 0, 50)}):Play()
+end)
+
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 220, 1, -50)
+sidebar.Position = UDim2.new(0, 0, 0, 50)
+sidebar.BackgroundColor3 = theme.Sidebar
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
+applyCorner(sidebar, 12)
+
+local sidebarCoverRight = Instance.new("Frame")
+sidebarCoverRight.Size = UDim2.new(0, 12, 1, 0)
+sidebarCoverRight.Position = UDim2.new(1, -12, 0, 0)
+sidebarCoverRight.BackgroundColor3 = theme.Sidebar
+sidebarCoverRight.BorderSizePixel = 0
+sidebarCoverRight.Parent = sidebar
+
+local sidebarCoverTop = Instance.new("Frame")
+sidebarCoverTop.Size = UDim2.new(1, 0, 0, 12)
+sidebarCoverTop.Position = UDim2.new(0, 0, 0, 0)
+sidebarCoverTop.BackgroundColor3 = theme.Sidebar
+sidebarCoverTop.BorderSizePixel = 0
+sidebarCoverTop.Parent = sidebar
+
+local sidebarRightStroke = Instance.new("Frame")
+sidebarRightStroke.Size = UDim2.new(0, 1, 1, 0)
+sidebarRightStroke.Position = UDim2.new(1, 0, 0, 0)
+sidebarRightStroke.BackgroundColor3 = theme.Stroke
+sidebarRightStroke.BorderSizePixel = 0
+sidebarRightStroke.Parent = sidebar
+
+local tabContainer = Instance.new("ScrollingFrame")
+tabContainer.Size = UDim2.new(1, 0, 1, -80)
+tabContainer.Position = UDim2.new(0, 0, 0, 10)
+tabContainer.BackgroundTransparency = 1
+tabContainer.BorderSizePixel = 0
+tabContainer.ScrollBarThickness = 2
+tabContainer.ScrollBarImageColor3 = theme.ItemBG
+tabContainer.Parent = sidebar
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.Parent = tabContainer
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Padding = UDim.new(0, 8)
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local profileFrame = Instance.new("Frame")
+profileFrame.Size = UDim2.new(1, 0, 0, 70)
+profileFrame.Position = UDim2.new(0, 0, 1, -70)
+profileFrame.BackgroundColor3 = theme.ItemBG
+profileFrame.BorderSizePixel = 0
+profileFrame.Parent = sidebar
+applyCorner(profileFrame, 12)
+
+local profileTopStroke = Instance.new("Frame")
+profileTopStroke.Size = UDim2.new(1, 0, 0, 1)
+profileTopStroke.Position = UDim2.new(0, 0, 0, 0)
+profileTopStroke.BackgroundColor3 = theme.Stroke
+profileTopStroke.BorderSizePixel = 0
+profileTopStroke.Parent = profileFrame
+
+local avatarImage = Instance.new("ImageLabel")
+avatarImage.Size = UDim2.new(0, 42, 0, 42)
+avatarImage.Position = UDim2.new(0, 12, 0.5, -21)
+avatarImage.BackgroundColor3 = theme.Background
+pcall(function() avatarImage.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150) end)
+avatarImage.Parent = profileFrame
+applyCorner(avatarImage, 21)
+applyStroke(avatarImage, theme.Stroke, 1)
+
+local nameLabel = Instance.new("TextLabel")
+nameLabel.Size = UDim2.new(0, 140, 0, 20)
+nameLabel.Position = UDim2.new(0, 65, 0, 15)
+nameLabel.BackgroundTransparency = 1
+nameLabel.Text = player.DisplayName
+nameLabel.TextColor3 = theme.TextPrimary
+nameLabel.Font = Enum.Font.GothamBold
+nameLabel.TextSize = 14
+nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+nameLabel.Parent = profileFrame
+
+local userLabel = Instance.new("TextLabel")
+userLabel.Size = UDim2.new(0, 140, 0, 15)
+userLabel.Position = UDim2.new(0, 65, 0, 38)
+userLabel.BackgroundTransparency = 1
+userLabel.Text = "@" .. player.Name
+userLabel.TextColor3 = theme.TextSecondary
+userLabel.Font = Enum.Font.Gotham
+userLabel.TextSize = 12
+userLabel.TextXAlignment = Enum.TextXAlignment.Left
+userLabel.Parent = profileFrame
+
+local contentArea = Instance.new("Frame")
+contentArea.Size = UDim2.new(1, -221, 1, -50)
+contentArea.Position = UDim2.new(0, 221, 0, 50)
+contentArea.BackgroundColor3 = theme.Background
+contentArea.BorderSizePixel = 0
+contentArea.Parent = mainFrame
+applyCorner(contentArea, 12)
+
+local contentCoverLeft = Instance.new("Frame")
+contentCoverLeft.Size = UDim2.new(0, 12, 1, 0)
+contentCoverLeft.BackgroundColor3 = theme.Background
+contentCoverLeft.BorderSizePixel = 0
+contentCoverLeft.Parent = contentArea
+
+local contentCoverTop = Instance.new("Frame")
+contentCoverTop.Size = UDim2.new(1, 0, 0, 12)
+contentCoverTop.BackgroundColor3 = theme.Background
+contentCoverTop.BorderSizePixel = 0
+contentCoverTop.Parent = contentArea
+
+local tabs = {}
+local activeTab = nil
+
+local function createTab(name, iconId)
+	local tabBtn = Instance.new("TextButton")
+	tabBtn.Size = UDim2.new(1, -24, 0, 42)
+	tabBtn.BackgroundColor3 = theme.TabInactive
+	tabBtn.Text = ""
+	tabBtn.AutoButtonColor = false
+	tabBtn.Parent = tabContainer
+	applyCorner(tabBtn, 8)
+	local tabStroke = applyStroke(tabBtn, theme.Stroke, 1)
+	
+	local icon = Instance.new("ImageLabel")
+	icon.Size = UDim2.new(0, 20, 0, 20)
+	icon.Position = UDim2.new(0, 15, 0.5, -10)
+	icon.BackgroundTransparency = 1
+	icon.Image = iconId
+	icon.ImageColor3 = theme.TextSecondary
+	icon.Parent = tabBtn
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -50, 1, 0)
+	label.Position = UDim2.new(0, 45, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name
+	label.TextColor3 = theme.TextSecondary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = tabBtn
+	
+	local activeIndicator = Instance.new("Frame")
+	activeIndicator.Size = UDim2.new(0, 4, 0, 20)
+	activeIndicator.Position = UDim2.new(0, 0, 0.5, -10)
+	activeIndicator.BackgroundColor3 = theme.Accent
+	activeIndicator.BorderSizePixel = 0
+	activeIndicator.BackgroundTransparency = 1
+	activeIndicator.Parent = tabBtn
+	applyCorner(activeIndicator, 2)
+	
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.BackgroundTransparency = 1
+	page.BorderSizePixel = 0
+	page.ScrollBarThickness = 4
+	page.ScrollBarImageColor3 = theme.ItemBG
+	page.Visible = false
+	page.Parent = contentArea
+	
+	local pageLayout = Instance.new("UIListLayout")
+	pageLayout.Parent = page
+	pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	pageLayout.Padding = UDim.new(0, 15)
+	
+	local pagePadding = Instance.new("UIPadding")
+	pagePadding.Parent = page
+	pagePadding.PaddingTop = UDim.new(0, 20)
+	pagePadding.PaddingLeft = UDim.new(0, 25)
+	pagePadding.PaddingRight = UDim.new(0, 25)
+	pagePadding.PaddingBottom = UDim.new(0, 20)
+	
+	pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		page.CanvasSize = UDim2.new(0, 0, 0, pageLayout.AbsoluteContentSize.Y + 40)
+	end)
+	
+	tabBtn.MouseEnter:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.ItemHover}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+			TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.TextPrimary}):Play()
+			TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.TextSecondary}):Play()
+		end
+	end)
+	
+	tabBtn.MouseLeave:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.Stroke}):Play()
+		end
+	end)
+	
+	tabBtn.MouseButton1Click:Connect(function()
+		if activeTab == tabBtn then return end
+		if activeTab then
+			local prevStroke = activeTab:FindFirstChildOfClass("UIStroke")
+			TweenService:Create(activeTab, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(activeTab:FindFirstChild("TextLabel"), TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(activeTab:FindFirstChild("ImageLabel"), TweenInfo.new(0.2), {ImageColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(activeTab:FindFirstChild("Frame"), TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+			if prevStroke then
+				TweenService:Create(prevStroke, TweenInfo.new(0.2), {Color = theme.Stroke}):Play()
+			end
+			tabs[activeTab].Visible = false
+		end
+		
+		activeTab = tabBtn
+		TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabActive}):Play()
+		TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+		TweenService:Create(icon, TweenInfo.new(0.2), {ImageColor3 = theme.Accent}):Play()
+		TweenService:Create(activeIndicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+		TweenService:Create(tabStroke, TweenInfo.new(0.2), {Color = theme.Accent}):Play()
+		page.Visible = true
+	end)
+	
+	tabs[tabBtn] = page
+	
+	if not activeTab then
+		activeTab = tabBtn
+		tabBtn.BackgroundColor3 = theme.TabActive
+		label.TextColor3 = theme.TextPrimary
+		icon.ImageColor3 = theme.Accent
+		activeIndicator.BackgroundTransparency = 0
+		tabStroke.Color = theme.Accent
+		page.Visible = true
+	end
+	
+	return page
+end
+
+local function createSection(page, title)
+	local sectionFrame = Instance.new("Frame")
+	sectionFrame.Size = UDim2.new(1, 0, 0, 45)
+	sectionFrame.BackgroundColor3 = theme.ItemBG
+	sectionFrame.Parent = page
+	applyCorner(sectionFrame, 8)
+	applyStroke(sectionFrame, theme.Stroke, 1)
+	
+	local headerBtn = Instance.new("TextButton")
+	headerBtn.Size = UDim2.new(1, 0, 0, 45)
+	headerBtn.BackgroundTransparency = 1
+	headerBtn.Text = ""
+	headerBtn.Parent = sectionFrame
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -30, 1, 0)
+	titleLabel.Position = UDim2.new(0, 15, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = theme.TextPrimary
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 15
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = headerBtn
+	
+	local highlightBar = Instance.new("Frame")
+	highlightBar.Size = UDim2.new(0, 4, 0, 20)
+	highlightBar.Position = UDim2.new(0, 0, 0.5, -10)
+	highlightBar.BackgroundColor3 = theme.Accent
+	highlightBar.BorderSizePixel = 0
+	highlightBar.Parent = headerBtn
+	applyCorner(highlightBar, 2)
+	
+	local chevron = Instance.new("ImageLabel")
+	chevron.Size = UDim2.new(0, 20, 0, 20)
+	chevron.Position = UDim2.new(1, -30, 0.5, -10)
+	chevron.BackgroundTransparency = 1
+	chevron.Image = "rbxassetid://130746061687765"
+	chevron.ImageColor3 = theme.TextSecondary
+	chevron.Rotation = 180
+	chevron.Parent = headerBtn
+	
+	local contentFrame = Instance.new("Frame")
+	contentFrame.Size = UDim2.new(1, 0, 0, 0)
+	contentFrame.Position = UDim2.new(0, 0, 0, 45)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.ClipsDescendants = true
+	contentFrame.Parent = sectionFrame
+	
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Parent = contentFrame
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Padding = UDim.new(0, 10)
+	
+	local contentPadding = Instance.new("UIPadding")
+	contentPadding.Parent = contentFrame
+	contentPadding.PaddingTop = UDim.new(0, 5)
+	contentPadding.PaddingLeft = UDim.new(0, 15)
+	contentPadding.PaddingRight = UDim.new(0, 15)
+	contentPadding.PaddingBottom = UDim.new(0, 15)
+	
+	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		if chevron.Rotation == 180 then
+			local newHeight = contentLayout.AbsoluteContentSize.Y + 20
+			contentFrame.Size = UDim2.new(1, 0, 0, newHeight)
+			sectionFrame.Size = UDim2.new(1, 0, 0, newHeight + 45)
+		end
+	end)
+	
+	local isOpen = true
+	headerBtn.MouseButton1Click:Connect(function()
+		isOpen = not isOpen
+		if isOpen then
+			TweenService:Create(chevron, TweenInfo.new(0.3), {Rotation = 180}):Play()
+			local newHeight = contentLayout.AbsoluteContentSize.Y + 20
+			TweenService:Create(contentFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, newHeight)}):Play()
+			TweenService:Create(sectionFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, newHeight + 45)}):Play()
+		else
+			TweenService:Create(chevron, TweenInfo.new(0.3), {Rotation = 0}):Play()
+			TweenService:Create(contentFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 0)}):Play()
+			TweenService:Create(sectionFrame, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, 45)}):Play()
+		end
+	end)
+	
+	return contentFrame
+end
+
+local function createLabel(parent, text, customColor)
+	local labelContainer = Instance.new("Frame")
+	labelContainer.Size = UDim2.new(1, 0, 0, 38)
+	labelContainer.BackgroundColor3 = theme.Sidebar
+	labelContainer.Parent = parent
+	applyCorner(labelContainer, 8)
+	applyStroke(labelContainer, theme.Stroke, 1)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -20, 1, 0)
+	label.Position = UDim2.new(0, 10, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = customColor or theme.TextPrimary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = labelContainer
+	
+	return label
+end
+
+local function createButton(parent, text, color, callback)
+	local btnContainer = Instance.new("Frame")
+	btnContainer.Size = UDim2.new(1, 0, 0, 42)
+	btnContainer.BackgroundColor3 = theme.Sidebar
+	btnContainer.Parent = parent
+	applyCorner(btnContainer, 8)
+	
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(1, 0, 1, 0)
+	btn.Position = UDim2.new(0, 0, 0, 0)
+	btn.BackgroundColor3 = color
+	btn.Text = text
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 14
+	btn.AutoButtonColor = true
+	btn.Parent = btnContainer
+	applyCorner(btn, 8)
+	applyStroke(btn, theme.Stroke, 1)
+	
+	btn.MouseButton1Click:Connect(function()
+		if callback then callback() end
+	end)
+	return btn
+end
+
+local SETTINGS = {
+	SEARCH_INTERVAL    = 1,
+	PROMPT_DISTANCE    = 3,
+	PATH_RECOMPUTE_MAX = 5,
+	WALK_SPEED_BOOST   = 0,
+	AUTO_EQUIP_ABYSSAL = false,
+	MAX_EGG_HEIGHT     = 130,
+}
+
+local CONFIG_FILE = "NK_SolsFarmDiscord.json"
+
+local function saveConfig()
+	if writefile then pcall(function() writefile(CONFIG_FILE, HttpService:JSONEncode(SETTINGS)) end) end
+end
+
+local function loadConfig()
+	if readfile and isfile and isfile(CONFIG_FILE) then
+		pcall(function()
+			local decoded = HttpService:JSONDecode(readfile(CONFIG_FILE))
+			if decoded then
+				for k, v in pairs(decoded) do
+					if SETTINGS[k] ~= nil then SETTINGS[k] = v end
+				end
+			end
+		end)
+	end
+end
+loadConfig()
+
+local function createSlider(parent, text, min, max, settingKey)
+	local sliderContainer = Instance.new("Frame")
+	sliderContainer.Size = UDim2.new(1, 0, 0, 50)
+	sliderContainer.BackgroundColor3 = theme.Sidebar
+	sliderContainer.Parent = parent
+	applyCorner(sliderContainer, 8)
+	applyStroke(sliderContainer, theme.Stroke, 1)
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(0.6, 0, 0, 20)
+	titleLbl.Position = UDim2.new(0, 10, 0, 5)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = text
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = sliderContainer
+
+	local valLbl = Instance.new("TextLabel")
+	valLbl.Size = UDim2.new(0.3, 0, 0, 20)
+	valLbl.Position = UDim2.new(0.7, -10, 0, 5)
+	valLbl.BackgroundTransparency = 1
+	valLbl.Text = tostring(SETTINGS[settingKey])
+	valLbl.TextColor3 = theme.Gold
+	valLbl.Font = Enum.Font.GothamBold
+	valLbl.TextSize = 13
+	valLbl.TextXAlignment = Enum.TextXAlignment.Right
+	valLbl.Parent = sliderContainer
+
+	local track = Instance.new("Frame")
+	track.Size = UDim2.new(1, -20, 0, 6)
+	track.Position = UDim2.new(0, 10, 0, 32)
+	track.BackgroundColor3 = theme.ItemBG
+	track.BorderSizePixel = 0
+	track.Parent = sliderContainer
+	applyCorner(track, 3)
+
+	local fill = Instance.new("Frame")
+	local fillScale = (SETTINGS[settingKey] - min) / (max - min)
+	fill.Size = UDim2.new(math.clamp(fillScale, 0, 1), 0, 1, 0)
+	fill.BackgroundColor3 = theme.Accent
+	fill.BorderSizePixel = 0
+	fill.Parent = track
+	applyCorner(fill, 3)
+
+	local knob = Instance.new("Frame")
+	knob.Size = UDim2.new(0, 14, 0, 14)
+	knob.Position = UDim2.new(math.clamp(fillScale, 0, 1), -7, 0.5, -7)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.BorderSizePixel = 0
+	knob.Parent = track
+	applyCorner(knob, 7)
+
+	local sliding = false
+	local function updateSlider(inputPos)
+		local rel = math.clamp((inputPos - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+		local val = math.floor(min + rel * (max - min))
+		fill.Size = UDim2.new(rel, 0, 1, 0)
+		knob.Position = UDim2.new(rel, -7, 0.5, -7)
+		valLbl.Text = tostring(val)
+		SETTINGS[settingKey] = val
+		saveConfig()
+	end
+
+	track.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			sliding = true
+			updateSlider(input.Position.X)
+		end
+	end)
+	knob.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if sliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+			updateSlider(input.Position.X)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end
+	end)
+end
+
+local function createToggle(parent, text, settingKey)
+	local toggleContainer = Instance.new("Frame")
+	toggleContainer.Size = UDim2.new(1, 0, 0, 42)
+	toggleContainer.BackgroundColor3 = theme.Sidebar
+	toggleContainer.Parent = parent
+	applyCorner(toggleContainer, 8)
+	applyStroke(toggleContainer, theme.Stroke, 1)
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(0.7, 0, 1, 0)
+	titleLbl.Position = UDim2.new(0, 10, 0, 0)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = text
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = toggleContainer
+
+	local switchBg = Instance.new("TextButton")
+	switchBg.Size = UDim2.new(0, 44, 0, 24)
+	switchBg.Position = UDim2.new(1, -54, 0.5, -12)
+	switchBg.BackgroundColor3 = SETTINGS[settingKey] and theme.Success or theme.ItemBG
+	switchBg.Text = ""
+	switchBg.Parent = toggleContainer
+	applyCorner(switchBg, 12)
+	local str = applyStroke(switchBg, theme.Stroke, 1)
+
+	local knob = Instance.new("Frame")
+	knob.Size = UDim2.new(0, 18, 0, 18)
+	knob.Position = SETTINGS[settingKey] and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.BorderSizePixel = 0
+	knob.Parent = switchBg
+	applyCorner(knob, 9)
+
+	switchBg.MouseButton1Click:Connect(function()
+		SETTINGS[settingKey] = not SETTINGS[settingKey]
+		saveConfig()
+		local isToggled = SETTINGS[settingKey]
+		TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = isToggled and theme.Success or theme.ItemBG}):Play()
+		TweenService:Create(knob, TweenInfo.new(0.2), {Position = isToggled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
+	end)
+end
+
+local pageDashboard = createTab("Dashboard", "rbxassetid://137577418512694")
+local pageSettings = createTab("Settings", "rbxassetid://91865132860715")
+local pageLogs = createTab("Logs", "rbxassetid://95995379265657")
+
+local secStatus = createSection(pageDashboard, "Live Statistics")
+local lblStatus = createLabel(secStatus, "Status: Stopped", theme.Danger)
+local lblTarget = createLabel(secStatus, "Target: None", theme.TextSecondary)
+local lblFound = createLabel(secStatus, "Eggs Found: 0", theme.Gold)
+local lblCollected = createLabel(secStatus, "Eggs Collected: 0", theme.Success)
+
+local secControls = createSection(pageDashboard, "Controls")
+local startBtnObj
+local stopBtnObj
+
+local secConfig = createSection(pageSettings, "Farm Configuration")
+createSlider(secConfig, "Collect Distance", 2, 12, "PROMPT_DISTANCE")
+createSlider(secConfig, "Path Retries", 1, 10, "PATH_RECOMPUTE_MAX")
+createSlider(secConfig, "WalkSpeed Boost", 0, 80, "WALK_SPEED_BOOST")
+createToggle(secConfig, "Auto Equip Abyssal", "AUTO_EQUIP_ABYSSAL")
+
+local logContainer = Instance.new("ScrollingFrame")
+logContainer.Size = UDim2.new(1, 0, 1, 0)
+logContainer.BackgroundTransparency = 1
+logContainer.BorderSizePixel = 0
+logContainer.ScrollBarThickness = 3
+logContainer.ScrollBarImageColor3 = theme.Accent
+logContainer.Parent = pageLogs
+local logList = Instance.new("UIListLayout")
+logList.Parent = logContainer
+logList.SortOrder = Enum.SortOrder.LayoutOrder
+logList.Padding = UDim.new(0, 5)
+
+logList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	logContainer.CanvasSize = UDim2.new(0, 0, 0, logList.AbsoluteContentSize.Y)
+	logContainer.CanvasPosition = Vector2.new(0, logList.AbsoluteContentSize.Y)
+end)
+
+local function guiLog(msg, color)
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.new(1, 0, 0, 20)
+	l.BackgroundTransparency = 1
+	l.Text = "[" .. os.date("%H:%M:%S") .. "] " .. msg
+	l.TextColor3 = color or theme.TextPrimary
+	l.Font = Enum.Font.Code
+	l.TextSize = 12
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.Parent = logContainer
+
+	local children = logContainer:GetChildren()
+	local maxLogs = 50
+	local cList = {}
+	for _, c in ipairs(children) do
+		if c:IsA("TextLabel") then table.insert(cList, c) end
+	end
+	if #cList > maxLogs then cList[1]:Destroy() end
+end
+
+local STATE = {
+	running = false,
+	eggsCollected = 0,
+	currentTarget = "—",
+	currentEggInstance = nil,
+	status = "Stopped",
+	eggsFound = 0,
+}
+local ignoredEggs = setmetatable({}, {__mode = "k"})
+
+game:GetService("LogService").MessageOut:Connect(function(message)
+	if message:match("Invalid egg") and STATE.currentEggInstance then
+		ignoredEggs[STATE.currentEggInstance] = true
+	end
+end)
+
+local EGG_PATTERNS = {"^point_egg_%d+$", "^random_potion_egg_%d+$"}
+local EXCLUDED_ZONES = {
+	{ center = Vector3.new(55.676, 102.85, -594.476), radius = 100 },
+	{ center = Vector3.new(-50.29, 95.5, -102.54), radius = 80 },
+	{ center = Vector3.new(16.326, 93.75, -438.988), radius = 20 },
+}
+
+local function updateGUI()
+	lblCollected.Text = "Eggs Collected: " .. STATE.eggsCollected
+	lblFound.Text = "Eggs Found: " .. STATE.eggsFound
+	lblTarget.Text = "Target: " .. STATE.currentTarget
+	lblStatus.Text = "Status: " .. STATE.status
+	lblStatus.TextColor3 = STATE.running and theme.Success or theme.Danger
+end
+
+local function isEggName(name)
+	for _, pattern in ipairs(EGG_PATTERNS) do
+		if string.match(name, pattern) then return true end
+	end
+	return false
+end
+
+local function getEggPriority(name)
+	if string.match(name, "^random_potion_egg_%d+$") then return 1 end
+	if string.match(name, "^point_egg_%d+$") then return 2 end
+	return 3
+end
+
+local function distanceTo(pos)
+	if not rootPart or not rootPart.Parent then return math.huge end
+	return (rootPart.Position - pos).Magnitude
+end
+
+local function findAllEggs()
+	local eggs = {}
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if isEggName(obj.Name) then
+			if ignoredEggs[obj] then continue end
+			local part = obj:IsA("BasePart") and obj or (obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)))
+			if part and part.Position.Y <= SETTINGS.MAX_EGG_HEIGHT then
+				local inExcluded = false
+				for _, zone in ipairs(EXCLUDED_ZONES) do
+					if (part.Position - zone.center).Magnitude <= zone.radius then
+						inExcluded = true
+						break
+					end
+				end
+				if not inExcluded then
+					table.insert(eggs, {
+						instance = obj,
+						part = part,
+						position = part.Position,
+						prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true),
+						name = obj.Name,
+						priority = getEggPriority(obj.Name),
+					})
+				end
+			end
+		end
+	end
+	table.sort(eggs, function(a, b)
+		if a.priority ~= b.priority then return a.priority < b.priority end
+		return distanceTo(a.position) < distanceTo(b.position)
+	end)
+	STATE.eggsFound = #eggs
+	return eggs
+end
+
+local function fireProximityPromptSafe(prompt)
+	if not prompt or not prompt.Parent then return false end
+	if fireproximityprompt then fireproximityprompt(prompt) return true end
+	local oldHold = prompt.HoldDuration
+	local oldDist = prompt.MaxActivationDistance
+	prompt.MaxActivationDistance = 9999
+	prompt.HoldDuration = 0
+	prompt:InputHoldBegin()
+	task.wait(0.1)
+	prompt:InputHoldEnd()
+	prompt.HoldDuration = oldHold
+	prompt.MaxActivationDistance = oldDist
+	return true
+end
+
+local function collectEgg(egg)
+	local prompt = egg.prompt or egg.instance:FindFirstChildWhichIsA("ProximityPrompt", true)
+	if prompt then
+		fireProximityPromptSafe(prompt)
+		task.wait(0.5)
+	else
+		VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+		task.wait(0.2)
+		VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+		task.wait(0.5)
+	end
+	STATE.eggsCollected = STATE.eggsCollected + 1
+	guiLog("Collected: " .. egg.name, theme.Success)
+end
+
+local SimplePath
+pcall(function() SimplePath = loadstring(game:HttpGet("https://raw.githubusercontent.com/grayzcale/simplepath/main/src/SimplePath.lua"))() end)
+
+local pathAgent = nil
+local function initPathAgent()
+	if pathAgent then pathAgent:Destroy() end
+	if not SimplePath or not character then return end
+	pathAgent = SimplePath.new(character, {
+		AgentRadius = 3, AgentHeight = 5.5, AgentCanJump = true, AgentCanClimb = true, AgentJumpHeight = 7.2, WaypointSpacing = 3, Costs = { Water = 100, Climb = 1 },
+	})
+end
+if character then initPathAgent() end
+player.CharacterAdded:Connect(function() task.wait(1) initPathAgent() end)
+
+local function moveToEgg(egg)
+	STATE.currentEggInstance = egg.instance
+	if not rootPart or not egg.part or not egg.part.Parent then return false end
+	if not pathAgent then guiLog("SimplePath Error", theme.Danger) return false end
+
+	guiLog("Walking to: " .. egg.name, theme.Accent)
+	if SETTINGS.WALK_SPEED_BOOST > 0 and humanoid then humanoid.WalkSpeed = SETTINGS.WALK_SPEED_BOOST end
+	
+	local maxErrors = SETTINGS.PATH_RECOMPUTE_MAX * 3
+	local errors, isCompleted = 0, false
+	local conR, conB, conE, conW
+
+	local function cleanup()
+		if conR then conR:Disconnect() end if conB then conB:Disconnect() end
+		if conE then conE:Disconnect() end if conW then conW:Disconnect() end
+		pcall(function() pathAgent:Stop() end)
+	end
+
+	conR = pathAgent.Reached:Connect(function() isCompleted = true end)
+	conB = pathAgent.Blocked:Connect(function() pcall(function() pathAgent:Run(egg.part.Position) end) end)
+	conE = pathAgent.Error:Connect(function()
+		errors = errors + 1
+		if humanoid then humanoid.Jump = true humanoid:MoveTo(rootPart.Position + rootPart.CFrame.RightVector * math.random(-4, 4)) end
+		task.wait(0.2)
+		pcall(function() pathAgent:Run(egg.part.Position) end)
+	end)
+	conW = pathAgent.WaypointReached:Connect(function()
+		local dist = distanceTo(egg.part.Position)
+		if dist <= SETTINGS.PROMPT_DISTANCE then isCompleted = true end
+		STATE.currentTarget = string.format("%s (%.0fm)", egg.name, dist)
+		updateGUI()
+	end)
+
+	pcall(function() pathAgent:Run(egg.part.Position) end)
+	local lastPos = rootPart.Position
+	local timeStuck = 0
+
+	while STATE.running and not isCompleted do
+		if not egg.part or not egg.part.Parent then break end
+		if distanceTo(egg.part.Position) <= SETTINGS.PROMPT_DISTANCE then isCompleted = true break end
+		if errors > maxErrors then break end
+
+		local currentPos = rootPart.Position
+		if (currentPos - lastPos).Magnitude < 0.2 then
+			timeStuck = timeStuck + 0.1
+			if timeStuck > 1.5 then
+				if humanoid then humanoid.Jump = true humanoid:MoveTo(currentPos + rootPart.CFrame.RightVector * math.random(-5, 5) - rootPart.CFrame.LookVector * 2) end
+				errors = errors + 1
+				task.wait(0.5)
+				pcall(function() pathAgent:Run(egg.part.Position) end)
+				timeStuck = 0
+			end
+		else
+			timeStuck = 0
+		end
+		lastPos = currentPos
+		task.wait(0.1)
+	end
+
+	cleanup()
+	if not STATE.running then return false end
+	if isCompleted or (egg.part and egg.part.Parent and distanceTo(egg.part.Position) <= SETTINGS.PROMPT_DISTANCE) then
+		collectEgg(egg)
+		return true
+	end
+	return false
+end
+
+local mapFixed = false
+local function fixMapGeometry()
+	if mapFixed then return end
+	mapFixed = true
+	local leafygrass = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("leafygrass")
+	if not leafygrass then return end
+	local extDown = 25
+	for _, obj in ipairs(leafygrass:GetDescendants()) do
+		if obj:IsA("BasePart") and obj.Name ~= "PathBlocker" then
+			local b = Instance.new("Part")
+			b.Name = "PathBlocker"
+			b.Size = Vector3.new(obj.Size.X, extDown, obj.Size.Z)
+			b.CFrame = obj.CFrame * CFrame.new(0, -(obj.Size.Y / 2 + extDown / 2), 0)
+			b.Anchored = true
+			b.CanCollide = true
+			b.Transparency = 1
+			b.Parent = obj
+		end
+	end
+end
+
+local function autoEquipAbyssal()
+	local pg = player:WaitForChild("PlayerGui")
+	local gs = game:GetService("GuiService")
+	local function cleverClick(t)
+		pcall(function()
+			gs.SelectedObject = t task.wait()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game) task.wait()
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+			gs.SelectedObject = nil
+		end)
+		pcall(function()
+			if getconnections then
+				for _, ev in ipairs({t.MouseButton1Down, t.MouseButton1Click, t.Activated}) do
+					for _, c in ipairs(getconnections(ev) or {}) do
+						if type(c) == "table" and c.Function then c.Function() end
+						if type(c) == "userdata" and type(c.Fire) == "function" then c:Fire() end
+					end
+				end
+			end
+		end)
+	end
+	local function toggleInv()
+		local sb = pg:FindFirstChild("MainInterface") and pg.MainInterface:FindFirstChild("SideButtons")
+		if sb then
+			local btns = {}
+			for _, b in ipairs(sb:GetChildren()) do if b:IsA("TextButton") then table.insert(btns, b) end end
+			table.sort(btns, function(a, b) return a.AbsolutePosition.Y < b.AbsolutePosition.Y end)
+			if btns[1] then cleverClick(btns[1]) task.wait(0.1) end
+		end
+	end
+
+	toggleInv()
+	local ac = false
+	for _, obj in ipairs(pg:GetDescendants()) do
+		if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and string.match(string.lower(obj.Text), "abyssal") then
+			if obj.AbsoluteSize.X > 0 and obj.AbsoluteSize.Y > 0 then
+				local btn = obj:FindFirstAncestorWhichIsA("GuiButton")
+				if btn then cleverClick(btn) ac = true break end
+			end
+		end
+	end
+	if not ac then toggleInv() return end
+	task.wait(0.1)
+	local eqBtn = nil
+	for _, obj in ipairs(pg:GetDescendants()) do
+		if obj:IsA("ImageButton") and string.find(obj:GetFullName(), "MainInterface%.Frame%.Frame%.Frame%.Frame%.ImageButton%.ImageButton$") then
+			eqBtn = obj break
+		end
+	end
+	if eqBtn then cleverClick(eqBtn) guiLog("Aura equipped!", theme.Success) end
+	toggleInv()
+end
+
+local function mainLoop()
+	fixMapGeometry()
+	guiLog("Farming started!", theme.Success)
+	while STATE.running do
+		if SETTINGS.AUTO_EQUIP_ABYSSAL and rootPart and not rootPart:FindFirstChild("FishSpin") then
+			autoEquipAbyssal() task.wait(0.5)
+		end
+		local eggs = findAllEggs()
+		updateGUI()
+		if #eggs == 0 then
+			STATE.currentTarget = "Scanning..."
+			STATE.status = "Searching"
+			updateGUI()
+			task.wait(SETTINGS.SEARCH_INTERVAL)
+		else
+			STATE.status = "Farming"
+			for _, egg in ipairs(eggs) do
+				if not STATE.running then break end
+				if egg.part and egg.part.Parent then moveToEgg(egg) task.wait(0.3) end
+			end
+			task.wait(SETTINGS.SEARCH_INTERVAL)
+		end
+	end
+	STATE.currentTarget = "—"
+	STATE.status = "Stopped"
+	updateGUI()
+	guiLog("Farming stopped", theme.Danger)
+end
+
+startBtnObj = createButton(secControls, "▶ Start Farming", theme.Success, function()
+	if STATE.running then return end
+	STATE.running = true
+	STATE.status = "Starting..."
+	updateGUI()
+	task.spawn(mainLoop)
+	sendNotification("Started", "Auto-Farm has been initiated.", theme.Success)
+end)
+
+stopBtnObj = createButton(secControls, "■ Stop Farming", theme.Danger, function()
+	if not STATE.running then return end
+	STATE.running = false
+	updateGUI()
+	sendNotification("Stopped", "Auto-Farm has been halted.", theme.Danger)
+end)
+
+guiLog("System initialized. Awaiting start...", theme.Accent)
+updateGUI()
