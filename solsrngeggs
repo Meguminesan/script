@@ -761,7 +761,6 @@ local SETTINGS = {
 	WALK_SPEED_BOOST   = 0,
 	AUTO_EQUIP_ABYSSAL = false,
 	ESP_ENABLED        = true,
-	ANTI_FALL          = true,
 	MAX_EGG_HEIGHT     = 130,
 }
 
@@ -934,7 +933,6 @@ createSlider(secConfig, "Path Retries", 1, 10, "PATH_RECOMPUTE_MAX")
 createSlider(secConfig, "WalkSpeed Boost", 0, 80, "WALK_SPEED_BOOST")
 createToggle(secConfig, "Auto Equip Abyssal", "AUTO_EQUIP_ABYSSAL")
 createToggle(secConfig, "Egg ESP (Highlight)", "ESP_ENABLED")
-createToggle(secConfig, "Anti-Water (Parkour Bypass)", "ANTI_FALL")
 
 local logContainer = Instance.new("ScrollingFrame")
 logContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -1020,31 +1018,6 @@ local function applyESP(obj)
 	end
 end
 
-local function applyWaterBridges()
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") then
-			local isWater = (obj.Material == Enum.Material.Water or string.lower(obj.Name):match("water"))
-			if isWater then
-				local bridge = obj:FindFirstChild("WaterBridge")
-				if SETTINGS.ANTI_FALL then
-					if not bridge then
-						bridge = Instance.new("Part")
-						bridge.Name = "WaterBridge"
-						bridge.Size = Vector3.new(obj.Size.X, 2, obj.Size.Z)
-						bridge.CFrame = obj.CFrame * CFrame.new(0, (obj.Size.Y / 2) - 0.5, 0)
-						bridge.Anchored = true
-						bridge.CanCollide = true
-						bridge.Transparency = 1
-						bridge.Parent = obj
-					end
-				else
-					if bridge then bridge:Destroy() end
-				end
-			end
-		end
-	end
-end
-
 task.spawn(function()
 	while task.wait(1) do
 		for _, obj in ipairs(workspace:GetDescendants()) do
@@ -1052,7 +1025,6 @@ task.spawn(function()
 				applyESP(obj)
 			end
 		end
-		applyWaterBridges()
 	end
 end)
 
@@ -1154,6 +1126,39 @@ end
 if character then initPathAgent() end
 player.CharacterAdded:Connect(function() task.wait(1) initPathAgent() end)
 
+local function getBestJumpPlatform(targetPos)
+	if not rootPart then return nil end
+	local myPos = rootPart.Position
+	local rayParams = RaycastParams.new()
+	rayParams.FilterDescendantsInstances = {character}
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	local gapRay = workspace:Raycast(myPos + rootPart.CFrame.LookVector * 4 + Vector3.new(0, 2, 0), Vector3.new(0, -15, 0), rayParams)
+	
+	if not gapRay then
+		local bestPart = nil
+		local bestDist = (myPos - targetPos).Magnitude
+		local searchArea = workspace:FindFirstChild("Map") or workspace
+		for _, obj in ipairs(searchArea:GetDescendants()) do
+			if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency < 1 and obj.Name ~= "PathBlocker" then
+				local pDist = (obj.Position - myPos).Magnitude
+				if pDist > 4 and pDist < 25 then
+					local dy = obj.Position.Y - myPos.Y
+					if dy > -10 and dy < 7.2 then
+						local dTarget = (obj.Position - targetPos).Magnitude
+						if dTarget < bestDist then
+							bestDist = dTarget
+							bestPart = obj
+						end
+					end
+				end
+			end
+		end
+		return bestPart
+	end
+	return nil
+end
+
 local function moveToEgg(egg)
 	STATE.currentEggInstance = egg.instance
 	if not rootPart or not egg.part or not egg.part.Parent then return false end
@@ -1176,8 +1181,15 @@ local function moveToEgg(egg)
 	conB = pathAgent.Blocked:Connect(function() pcall(function() pathAgent:Run(egg.part.Position) end) end)
 	conE = pathAgent.Error:Connect(function()
 		errors = errors + 1
-		if humanoid then humanoid.Jump = true humanoid:MoveTo(rootPart.Position + rootPart.CFrame.RightVector * math.random(-4, 4)) end
-		task.wait(0.2)
+		local jumpPart = getBestJumpPlatform(egg.part.Position)
+		if jumpPart and humanoid then
+			humanoid.Jump = true
+			humanoid:MoveTo(jumpPart.Position)
+		elseif humanoid then 
+			humanoid.Jump = true 
+			humanoid:MoveTo(rootPart.Position + rootPart.CFrame.RightVector * math.random(-4, 4)) 
+		end
+		task.wait(0.5)
 		pcall(function() pathAgent:Run(egg.part.Position) end)
 	end)
 	conW = pathAgent.WaypointReached:Connect(function()
@@ -1200,7 +1212,15 @@ local function moveToEgg(egg)
 		if (currentPos - lastPos).Magnitude < 0.2 then
 			timeStuck = timeStuck + 0.1
 			if timeStuck > 1.5 then
-				if humanoid then humanoid.Jump = true humanoid:MoveTo(currentPos + rootPart.CFrame.RightVector * math.random(-5, 5) - rootPart.CFrame.LookVector * 2) end
+				local jumpPart = getBestJumpPlatform(egg.part.Position)
+				if jumpPart and humanoid then
+					humanoid.Jump = true
+					humanoid:MoveTo(jumpPart.Position)
+					task.wait(0.8)
+				elseif humanoid then
+					humanoid.Jump = true 
+					humanoid:MoveTo(currentPos + rootPart.CFrame.RightVector * math.random(-5, 5) - rootPart.CFrame.LookVector * 2)
+				end
 				errors = errors + 1
 				task.wait(0.5)
 				pcall(function() pathAgent:Run(egg.part.Position) end)
