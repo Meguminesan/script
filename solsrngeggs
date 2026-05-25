@@ -758,7 +758,6 @@ local SETTINGS = {
 	SEARCH_INTERVAL    = 1,
 	PROMPT_DISTANCE    = 3,
 	PATH_RECOMPUTE_MAX = 5,
-	WALK_SPEED_BOOST   = 0,
 	AUTO_EQUIP_ABYSSAL = false,
 	ESP_ENABLED        = true,
 	MAX_EGG_HEIGHT     = 130,
@@ -930,7 +929,6 @@ local stopBtnObj
 local secConfig = createSection(pageSettings, "Farm Configuration")
 createSlider(secConfig, "Collect Distance", 2, 12, "PROMPT_DISTANCE")
 createSlider(secConfig, "Path Retries", 1, 10, "PATH_RECOMPUTE_MAX")
-createSlider(secConfig, "WalkSpeed Boost", 0, 80, "WALK_SPEED_BOOST")
 createToggle(secConfig, "Auto Equip Abyssal", "AUTO_EQUIP_ABYSSAL")
 createToggle(secConfig, "Egg ESP (Highlight)", "ESP_ENABLED")
 
@@ -1185,7 +1183,6 @@ local function moveToEgg(egg)
 	if not pathAgent then guiLog("SimplePath Error", theme.Danger) return false end
 
 	guiLog("Walking to: " .. egg.name, theme.Accent)
-	if SETTINGS.WALK_SPEED_BOOST > 0 and humanoid then humanoid.WalkSpeed = SETTINGS.WALK_SPEED_BOOST end
 	
 	local maxErrors = SETTINGS.PATH_RECOMPUTE_MAX * 3
 	local errors, isCompleted = 0, false
