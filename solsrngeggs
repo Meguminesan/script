@@ -760,6 +760,8 @@ local SETTINGS = {
 	PATH_RECOMPUTE_MAX = 5,
 	WALK_SPEED_BOOST   = 0,
 	AUTO_EQUIP_ABYSSAL = false,
+	ESP_ENABLED        = true,
+	ANTI_FALL          = true,
 	MAX_EGG_HEIGHT     = 130,
 }
 
@@ -931,6 +933,8 @@ createSlider(secConfig, "Collect Distance", 2, 12, "PROMPT_DISTANCE")
 createSlider(secConfig, "Path Retries", 1, 10, "PATH_RECOMPUTE_MAX")
 createSlider(secConfig, "WalkSpeed Boost", 0, 80, "WALK_SPEED_BOOST")
 createToggle(secConfig, "Auto Equip Abyssal", "AUTO_EQUIP_ABYSSAL")
+createToggle(secConfig, "Egg ESP (Highlight)", "ESP_ENABLED")
+createToggle(secConfig, "Anti-Water (Parkour Bypass)", "ANTI_FALL")
 
 local logContainer = Instance.new("ScrollingFrame")
 logContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -992,19 +996,72 @@ local EXCLUDED_ZONES = {
 	{ center = Vector3.new(16.326, 93.75, -438.988), radius = 20 },
 }
 
+local function isEggName(name)
+	for _, pattern in ipairs(EGG_PATTERNS) do
+		if string.match(name, pattern) then return true end
+	end
+	return false
+end
+
+local function applyESP(obj)
+	if SETTINGS.ESP_ENABLED then
+		if not obj:FindFirstChild("EggESP") then
+			local hl = Instance.new("Highlight")
+			hl.Name = "EggESP"
+			hl.FillColor = theme.Accent
+			hl.OutlineColor = theme.TextPrimary
+			hl.FillTransparency = 0.4
+			hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			hl.Parent = obj
+		end
+	else
+		local hl = obj:FindFirstChild("EggESP")
+		if hl then hl:Destroy() end
+	end
+end
+
+local function applyWaterBridges()
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") then
+			local isWater = (obj.Material == Enum.Material.Water or string.lower(obj.Name):match("water"))
+			if isWater then
+				local bridge = obj:FindFirstChild("WaterBridge")
+				if SETTINGS.ANTI_FALL then
+					if not bridge then
+						bridge = Instance.new("Part")
+						bridge.Name = "WaterBridge"
+						bridge.Size = Vector3.new(obj.Size.X, 2, obj.Size.Z)
+						bridge.CFrame = obj.CFrame * CFrame.new(0, (obj.Size.Y / 2) - 0.5, 0)
+						bridge.Anchored = true
+						bridge.CanCollide = true
+						bridge.Transparency = 1
+						bridge.Parent = obj
+					end
+				else
+					if bridge then bridge:Destroy() end
+				end
+			end
+		end
+	end
+end
+
+task.spawn(function()
+	while task.wait(1) do
+		for _, obj in ipairs(workspace:GetDescendants()) do
+			if isEggName(obj.Name) then
+				applyESP(obj)
+			end
+		end
+		applyWaterBridges()
+	end
+end)
+
 local function updateGUI()
 	lblCollected.Text = "Eggs Collected: " .. STATE.eggsCollected
 	lblFound.Text = "Eggs Found: " .. STATE.eggsFound
 	lblTarget.Text = "Target: " .. STATE.currentTarget
 	lblStatus.Text = "Status: " .. STATE.status
 	lblStatus.TextColor3 = STATE.running and theme.Success or theme.Danger
-end
-
-local function isEggName(name)
-	for _, pattern in ipairs(EGG_PATTERNS) do
-		if string.match(name, pattern) then return true end
-	end
-	return false
 end
 
 local function getEggPriority(name)
