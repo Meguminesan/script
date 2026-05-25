@@ -1018,15 +1018,35 @@ local function applyESP(obj)
 	end
 end
 
+local eggCache = {}
+local function checkAndCacheEgg(obj)
+	if isEggName(obj.Name) then
+		eggCache[obj] = true
+		applyESP(obj)
+	end
+end
+
+for _, obj in ipairs(workspace:GetDescendants()) do
+	checkAndCacheEgg(obj)
+end
+
+workspace.DescendantAdded:Connect(checkAndCacheEgg)
+workspace.DescendantRemoving:Connect(function(obj)
+	eggCache[obj] = nil
+end)
+
 task.spawn(function()
 	while task.wait(1) do
-		for _, obj in ipairs(workspace:GetDescendants()) do
-			if isEggName(obj.Name) then
+		for obj in pairs(eggCache) do
+			if obj.Parent then
 				applyESP(obj)
+			else
+				eggCache[obj] = nil
 			end
 		end
 	end
 end)
+
 
 local function updateGUI()
 	lblCollected.Text = "Eggs Collected: " .. STATE.eggsCollected
@@ -1049,8 +1069,8 @@ end
 
 local function findAllEggs()
 	local eggs = {}
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if isEggName(obj.Name) then
+	for obj in pairs(eggCache) do
+		if obj.Parent and isEggName(obj.Name) then
 			if ignoredEggs[obj] then continue end
 			local part = obj:IsA("BasePart") and obj or (obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)))
 			if part and part.Position.Y <= SETTINGS.MAX_EGG_HEIGHT then
@@ -1138,11 +1158,11 @@ local function getBestJumpPlatform(targetPos)
 	if not gapRay then
 		local bestPart = nil
 		local bestDist = (myPos - targetPos).Magnitude
-		local searchArea = workspace:FindFirstChild("Map") or workspace
-		for _, obj in ipairs(searchArea:GetDescendants()) do
+		local parts = workspace:GetPartBoundsInRadius(myPos, 25)
+		for _, obj in ipairs(parts) do
 			if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency < 1 and obj.Name ~= "PathBlocker" then
 				local pDist = (obj.Position - myPos).Magnitude
-				if pDist > 4 and pDist < 25 then
+				if pDist > 4 then
 					local dy = obj.Position.Y - myPos.Y
 					if dy > -10 and dy < 7.2 then
 						local dTarget = (obj.Position - targetPos).Magnitude
@@ -1263,6 +1283,8 @@ local function fixMapGeometry()
 	end
 end
 
+local cachedAbyssalBtn = nil
+local cachedEqBtn = nil
 local function autoEquipAbyssal()
 	local pg = player:WaitForChild("PlayerGui")
 	local gs = game:GetService("GuiService")
@@ -1296,23 +1318,29 @@ local function autoEquipAbyssal()
 
 	toggleInv()
 	local ac = false
-	for _, obj in ipairs(pg:GetDescendants()) do
-		if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and string.match(string.lower(obj.Text), "abyssal") then
-			if obj.AbsoluteSize.X > 0 and obj.AbsoluteSize.Y > 0 then
-				local btn = obj:FindFirstAncestorWhichIsA("GuiButton")
-				if btn then cleverClick(btn) ac = true break end
+	if cachedAbyssalBtn and cachedAbyssalBtn.Parent then
+		cleverClick(cachedAbyssalBtn) ac = true
+	else
+		for _, obj in ipairs(pg:GetDescendants()) do
+			if (obj:IsA("TextLabel") or obj:IsA("TextButton")) and string.match(string.lower(obj.Text), "abyssal") then
+				if obj.AbsoluteSize.X > 0 and obj.AbsoluteSize.Y > 0 then
+					local btn = obj:FindFirstAncestorWhichIsA("GuiButton")
+					if btn then cachedAbyssalBtn = btn cleverClick(btn) ac = true break end
+				end
 			end
 		end
 	end
 	if not ac then toggleInv() return end
 	task.wait(0.1)
-	local eqBtn = nil
-	for _, obj in ipairs(pg:GetDescendants()) do
-		if obj:IsA("ImageButton") and string.find(obj:GetFullName(), "MainInterface%.Frame%.Frame%.Frame%.Frame%.ImageButton%.ImageButton$") then
-			eqBtn = obj break
+	if cachedEqBtn and cachedEqBtn.Parent then
+		cleverClick(cachedEqBtn) guiLog("Aura equipped!", theme.Success)
+	else
+		for _, obj in ipairs(pg:GetDescendants()) do
+			if obj:IsA("ImageButton") and string.find(obj:GetFullName(), "MainInterface%.Frame%.Frame%.Frame%.Frame%.ImageButton%.ImageButton$") then
+				cachedEqBtn = obj cleverClick(obj) guiLog("Aura equipped!", theme.Success) break
+			end
 		end
 	end
-	if eqBtn then cleverClick(eqBtn) guiLog("Aura equipped!", theme.Success) end
 	toggleInv()
 end
 
