@@ -18,12 +18,26 @@ player.CharacterAdded:Connect(function(char)
 	rootPart = char:WaitForChild("HumanoidRootPart")
 end)
 
-local targetParent = pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui")
+local targetParent = pcall(function() return gethui() end) and gethui() or (pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui"))
 local guiName = "FOREST-LOST-SECRET-ERROR-NEKO-FARM"
 
 if targetParent:FindFirstChild(guiName) then
 	targetParent:FindFirstChild(guiName):Destroy()
 end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = guiName
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+if syn and syn.protect_gui then pcall(syn.protect_gui, screenGui) end
+screenGui.Parent = targetParent
+
+local vu = game:GetService("VirtualUser")
+player.Idled:Connect(function()
+	vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+	task.wait(1)
+	vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+end)
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = guiName
@@ -761,9 +775,23 @@ local SETTINGS = {
 	AUTO_EQUIP_ABYSSAL = false,
 	ESP_ENABLED        = true,
 	MAX_EGG_HEIGHT     = 130,
+	WEBHOOK_URL        = "",
+	PRIV_SERVER_LINK   = "",
+	PING_USER_1        = "",
+	PING_USER_2        = "",
+	PING_USER_3        = "",
+	PING_USER_4        = "",
+	WH_BIOMES          = false,
+	WH_EGGS            = false,
+	WH_TIPS            = false,
+	WH_EGG_COUNT       = 25,
+	WH_PING_EVERYONE   = false,
+	WH_PING_HERE       = false,
+	PING_BIOMES_LIST   = "",
+	PING_EGGS_LIST     = ""
 }
 
-local CONFIG_FILE = "NK_SolsFarmDiscord.json"
+local CONFIG_FILE = "NK_SolsFarm_" .. tostring(player.UserId) .. ".json"
 
 local function saveConfig()
 	if writefile then pcall(function() writefile(CONFIG_FILE, HttpService:JSONEncode(SETTINGS)) end) end
@@ -780,6 +808,47 @@ local function loadConfig()
 			end
 		end)
 	end
+end
+loadConfig()
+
+local function createTextBox(parent, text, settingKey, placeholder)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, 0, 0, 60)
+	container.BackgroundColor3 = theme.Sidebar
+	container.Parent = parent
+	applyCorner(container, 8)
+	applyStroke(container, theme.Stroke, 1)
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -20, 0, 20)
+	titleLbl.Position = UDim2.new(0, 10, 0, 5)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = text
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = container
+
+	local input = Instance.new("TextBox")
+	input.Size = UDim2.new(1, -20, 0, 25)
+	input.Position = UDim2.new(0, 10, 0, 30)
+	input.BackgroundColor3 = theme.ItemBG
+	input.TextColor3 = theme.TextPrimary
+	input.Font = Enum.Font.Gotham
+	input.TextSize = 12
+	input.TextXAlignment = Enum.TextXAlignment.Left
+	input.PlaceholderText = placeholder or ""
+	input.Text = SETTINGS[settingKey] and tostring(SETTINGS[settingKey]) or ""
+	input.ClearTextOnFocus = false
+	input.Parent = container
+	applyCorner(input, 4)
+	applyStroke(input, theme.Stroke, 1)
+
+	input.FocusLost:Connect(function()
+		SETTINGS[settingKey] = input.Text
+		saveConfig()
+	end)
 end
 loadConfig()
 
@@ -914,7 +983,9 @@ end
 
 local pageDashboard = createTab("Dashboard", "rbxassetid://137577418512694")
 local pageSettings = createTab("Settings", "rbxassetid://91865132860715")
+local pageWebhooks = createTab("Webhooks", "rbxassetid://10052310118")
 local pageLogs = createTab("Logs", "rbxassetid://95995379265657")
+local pageUpdates = createTab("Updates", "rbxassetid://10052309855")
 
 local secStatus = createSection(pageDashboard, "Live Statistics")
 local lblStatus = createLabel(secStatus, "Status: Stopped", theme.Danger)
@@ -931,6 +1002,237 @@ createSlider(secConfig, "Collect Distance", 2, 12, "PROMPT_DISTANCE")
 createSlider(secConfig, "Path Retries", 1, 10, "PATH_RECOMPUTE_MAX")
 createToggle(secConfig, "Auto Equip Abyssal", "AUTO_EQUIP_ABYSSAL")
 createToggle(secConfig, "Egg ESP (Highlight)", "ESP_ENABLED")
+
+local secWhMain = createSection(pageWebhooks, "Main Settings")
+createTextBox(secWhMain, "Webhook URL", "WEBHOOK_URL", "https://discord.com/api/webhooks/...")
+createTextBox(secWhMain, "Private Server Link", "PRIV_SERVER_LINK", "https://www.roblox.com/games/...")
+
+local secWhEvents = createSection(pageWebhooks, "Event Triggers")
+createToggle(secWhEvents, "Send Biome Spawns", "WH_BIOMES")
+createToggle(secWhEvents, "Send Egg Spawned", "WH_EGGS")
+createToggle(secWhEvents, "Send Tips", "WH_TIPS")
+createSlider(secWhEvents, "Send Every X Eggs Collected", 25, 1000, "WH_EGG_COUNT")
+
+local secWhPings = createSection(pageWebhooks, "Ping Settings")
+createToggle(secWhPings, "Ping @everyone on Rare Biome", "WH_PING_EVERYONE")
+createToggle(secWhPings, "Ping @here on Rare Biome", "WH_PING_HERE")
+createTextBox(secWhPings, "Ping on Biomes (comma separated)", "PING_BIOMES_LIST", "Hell, Null, Glitched")
+createTextBox(secWhPings, "Ping on Eggs (comma separated)", "PING_EGGS_LIST", "random_potion_egg_1")
+createTextBox(secWhPings, "Ping User ID 1", "PING_USER_1", "123456789012345678")
+createTextBox(secWhPings, "Ping User ID 2", "PING_USER_2", "")
+createTextBox(secWhPings, "Ping User ID 3", "PING_USER_3", "")
+createTextBox(secWhPings, "Ping User ID 4", "PING_USER_4", "")
+
+local function addUpdate(version, date, changes)
+	local f = Instance.new("Frame")
+	f.Size = UDim2.new(1, 0, 0, 50)
+	f.AutomaticSize = Enum.AutomaticSize.Y
+	f.BackgroundColor3 = theme.ItemBG
+	f.Parent = pageUpdates
+	applyCorner(f, 8)
+	applyStroke(f, theme.Stroke, 1)
+	
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, -20, 0, 25)
+	title.Position = UDim2.new(0, 10, 0, 5)
+	title.BackgroundTransparency = 1
+	title.Text = "Version " .. version .. " - " .. date
+	title.TextColor3 = theme.Accent
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = 14
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	title.Parent = f
+	
+	local desc = Instance.new("TextLabel")
+	desc.Size = UDim2.new(1, -20, 0, 0)
+	desc.Position = UDim2.new(0, 10, 0, 30)
+	desc.AutomaticSize = Enum.AutomaticSize.Y
+	desc.BackgroundTransparency = 1
+	desc.Text = changes
+	desc.TextColor3 = theme.TextSecondary
+	desc.Font = Enum.Font.Gotham
+	desc.TextSize = 12
+	desc.TextXAlignment = Enum.TextXAlignment.Left
+	desc.TextWrapped = true
+	desc.Parent = f
+	
+	local padding = Instance.new("UIPadding")
+	padding.PaddingBottom = UDim.new(0, 10)
+	padding.Parent = f
+end
+
+addUpdate("1.1.0", "May 28, 2026", "- Added Discord Webhooks support.\n- Added custom triggers for Biomes, Eggs, Tips.\n- Added User ID Ping configurations.\n- Enhanced Anti-Detect measures.\n- Configs now save per-user.")
+
+local creditLbl = Instance.new("TextLabel")
+creditLbl.Size = UDim2.new(1, 0, 0, 20)
+creditLbl.BackgroundTransparency = 1
+creditLbl.Text = "Scripted by @neko.js"
+creditLbl.TextColor3 = theme.TextSecondary
+creditLbl.Font = Enum.Font.GothamBold
+creditLbl.TextSize = 12
+creditLbl.TextXAlignment = Enum.TextXAlignment.Center
+creditLbl.Parent = pageUpdates
+
+local function sendWebhook(embed, pings)
+	if not SETTINGS.WEBHOOK_URL or SETTINGS.WEBHOOK_URL == "" then return end
+	local contentStr = ""
+	if pings and #pings > 0 then contentStr = table.concat(pings, " ") end
+	
+	local data = {
+		content = contentStr ~= "" and contentStr or nil,
+		embeds = {embed},
+		username = "NK Farm Webhook",
+		avatar_url = "https://i.imgur.com/71G0O4R.png"
+	}
+	
+	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+	if _req then
+		task.spawn(function()
+			pcall(function()
+				_req({
+					Url = SETTINGS.WEBHOOK_URL,
+					Method = "POST",
+					Headers = {["Content-Type"] = "application/json"},
+					Body = HttpService:JSONEncode(data)
+				})
+			end)
+		end)
+	end
+end
+
+local glitchData = { color = 0x00FF00, icon = "https://static.wikia.nocookie.net/sol-rng/images/3/3f/Glitch_Map.jpg", rare = true }
+local BIOMES = {
+	["Windy"] = { color = 0x87CEEB, icon = "https://static.wikia.nocookie.net/sol-rng/images/1/19/Windy_img%28fixed%29.png" },
+	["Snowy"] = { color = 0xFFFAFA, icon = "https://static.wikia.nocookie.net/sol-rng/images/d/d7/Snowy_img.png" },
+	["Rainy"] = { color = 0x4682B4, icon = "https://static.wikia.nocookie.net/sol-rng/images/e/ec/Rainy.png" },
+	["Sand Storm"] = { color = 0xEDC9AF, icon = "https://static.wikia.nocookie.net/sol-rng/images/7/7c/Sand_Storm.png" },
+	["Hell"] = { color = 0xFF0000, icon = "https://static.wikia.nocookie.net/sol-rng/images/b/b3/New_Hell_Biome.png" },
+	["Starfall"] = { color = 0x00008B, icon = "https://i.imgur.com/bgRcBzE.png" },
+	["Heaven"] = { color = 0xFFFFFF, icon = "https://static.wikia.nocookie.net/sol-rng/images/0/0a/HeavenBiomeInGame.png" },
+	["Corruption"] = { color = 0x8A2BE2, icon = "https://static.wikia.nocookie.net/sol-rng/images/8/80/CorruptionBiomeNew.png" },
+	["Null"] = { color = 0x808080, icon = "https://i.imgur.com/BmX8sKM.png" },
+	["Dreamspace"] = { color = 0xFF69B4, icon = "https://static.wikia.nocookie.net/sol-rng/images/4/48/Dreamspace_Biome.png", rare = true },
+	["Glitched"] = glitchData,
+	["GLITCHED"] = glitchData,
+	["Cyberspace"] = { color = 0x00FFFF, icon = "https://static.wikia.nocookie.net/sol-rng/images/a/aa/Cyberspace.jpg", rare = true },
+	["Singularity"] = { color = 0x000000, icon = "https://static.wikia.nocookie.net/sol-rng/images/f/f7/SingularityBiome.png", rare = true }
+}
+
+local function handleChatMessage(text)
+	local plainText = string.gsub(text, "<[^>]+>", "")
+	local tag, content = string.match(plainText, "^%[%s*(.-)%s*%]:%s*(.*)")
+	if not tag then return end
+	
+	local psLink = (SETTINGS.PRIV_SERVER_LINK ~= "") and ("\n\n**Private Server:** [Click to Join]("..SETTINGS.PRIV_SERVER_LINK..")") or ""
+	
+	if BIOMES[tag] and SETTINGS.WH_BIOMES then
+		local bInfo = BIOMES[tag]
+		local pings = {}
+		local isPinged = false
+		local pingBiomes = string.split(string.lower(SETTINGS.PING_BIOMES_LIST or ""), ",")
+		for _, pb in ipairs(pingBiomes) do
+			local cleanPb = string.match(pb, "^%s*(.-)%s*$")
+			if cleanPb ~= "" and string.find(string.lower(tag), cleanPb, 1, true) then
+				isPinged = true break
+			end
+		end
+		
+		if isPinged or (bInfo.rare and (SETTINGS.WH_PING_EVERYONE or SETTINGS.WH_PING_HERE)) then
+			if bInfo.rare and SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
+			if bInfo.rare and SETTINGS.WH_PING_HERE then table.insert(pings, "@here") end
+			for i = 1, 4 do
+				local uid = SETTINGS["PING_USER_"..i]
+				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+			end
+		end
+		
+		local embed = {
+			title = "🌍 Biome Updated: " .. tag,
+			description = content .. psLink,
+			color = bInfo.color,
+			thumbnail = { url = bInfo.icon },
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed, pings)
+	elseif tag == "Egg Spawned" and SETTINGS.WH_EGGS then
+		local pings = {}
+		local isPinged = false
+		local pingEggs = string.split(string.lower(SETTINGS.PING_EGGS_LIST or ""), ",")
+		for _, pe in ipairs(pingEggs) do
+			local cleanPe = string.match(pe, "^%s*(.-)%s*$")
+			if cleanPe ~= "" and string.find(string.lower(content), cleanPe, 1, true) then
+				isPinged = true break
+			end
+		end
+		
+		if isPinged then
+			for i = 1, 4 do
+				local uid = SETTINGS["PING_USER_"..i]
+				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+			end
+		end
+
+		local embed = {
+			title = "🥚 Egg Spawned",
+			description = content .. psLink,
+			color = 0xFFA500,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed, pings)
+	elseif tag == "Tip" and SETTINGS.WH_TIPS then
+		local embed = {
+			title = "💡 Tip",
+			description = content .. psLink,
+			color = 0x00FF00,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed)
+	end
+end
+
+task.spawn(function()
+	local TextChatService = game:GetService("TextChatService")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	
+	if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+		TextChatService.MessageReceived:Connect(function(msg)
+			if msg.Text then handleChatMessage(msg.Text) end
+		end)
+		local sysChannels = TextChatService:FindFirstChild("TextChannels")
+		if sysChannels then
+			for _, ch in ipairs(sysChannels:GetChildren()) do
+				ch.MessageReceived:Connect(function(msg)
+					if msg.Text then handleChatMessage(msg.Text) end
+				end)
+			end
+		end
+	else
+		local defaultChatEvents = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+		if defaultChatEvents then
+			local onMessageDoneFiltering = defaultChatEvents:FindFirstChild("OnMessageDoneFiltering")
+			if onMessageDoneFiltering then
+				onMessageDoneFiltering.OnClientEvent:Connect(function(msgData)
+					if msgData and msgData.Message then handleChatMessage(msgData.Message) end
+				end)
+			end
+			local onNewMessage = defaultChatEvents:FindFirstChild("OnNewMessage")
+			if onNewMessage then
+				onNewMessage.OnClientEvent:Connect(function(msgData)
+					if msgData and msgData.Message then handleChatMessage(msgData.Message) end
+				end)
+			end
+		end
+	end
+	
+	pcall(function()
+		local chatScroller = player:WaitForChild("PlayerGui"):WaitForChild("Chat"):WaitForChild("Frame"):WaitForChild("ChatChannelParentFrame"):WaitForChild("Frame_MessageLogDisplay"):WaitForChild("Scroller")
+		chatScroller.ChildAdded:Connect(function(child)
+			task.wait(0.1)
+			local lbl = child:FindFirstChildWhichIsA("TextLabel", true)
+			if lbl then handleChatMessage(lbl.Text) end
+		end)
+	end)
+end)
 
 local logContainer = Instance.new("ScrollingFrame")
 logContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -972,11 +1274,13 @@ end
 local STATE = {
 	running = false,
 	eggsCollected = 0,
+	eggsSinceLastWH = 0,
 	currentTarget = "—",
 	currentEggInstance = nil,
 	status = "Stopped",
 	eggsFound = 0,
 }
+
 local ignoredEggs = setmetatable({}, {__mode = "k"})
 
 game:GetService("LogService").MessageOut:Connect(function(message)
@@ -1127,6 +1431,20 @@ local function collectEgg(egg)
 		task.wait(0.5)
 	end
 	STATE.eggsCollected = STATE.eggsCollected + 1
+	STATE.eggsSinceLastWH = STATE.eggsSinceLastWH + 1
+	
+	if SETTINGS.WEBHOOK_URL and SETTINGS.WEBHOOK_URL ~= "" and STATE.eggsSinceLastWH >= SETTINGS.WH_EGG_COUNT then
+		STATE.eggsSinceLastWH = 0
+		local psLink = (SETTINGS.PRIV_SERVER_LINK ~= "") and ("\n\n**Private Server:** [Click to Join]("..SETTINGS.PRIV_SERVER_LINK..")") or ""
+		local embed = {
+			title = "🎉 Milestone Reached",
+			description = "Collected **" .. STATE.eggsCollected .. "** eggs so far!" .. psLink,
+			color = 0x00FF00,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed)
+	end
+
 	guiLog("Collected: " .. egg.name, theme.Success)
 end
 
