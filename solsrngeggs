@@ -1307,81 +1307,6 @@ local function handleChatMessage(text)
 	end
 	
 	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
-	if type(SETTINGS.WEBHOOKS) ~= "table" or #SETTINGS.WEBHOOKS == 0 then return end
-	local contentStr = ""
-	if pings and #pings > 0 then contentStr = table.concat(pings, " ") end
-	
-	local data = {
-		content = contentStr ~= "" and contentStr or nil,
-		embeds = {embed},
-		username = "NK Farm Webhook",
-		avatar_url = "https://i.imgur.com/71G0O4R.png"
-	}
-	
-	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-	if _req then
-		local payload = HttpService:JSONEncode(data)
-		task.spawn(function()
-			for _, wh in ipairs(SETTINGS.WEBHOOKS) do
-				if wh.enabled and wh.url and wh.url ~= "" then
-					pcall(function()
-						_req({
-							Url = wh.url,
-							Method = "POST",
-							Headers = {["Content-Type"] = "application/json"},
-							Body = payload
-						})
-					end)
-				end
-			end
-		end)
-	end
-end
-
-local glitchData = { color = 0x00FF00, icon = "https://static.wikia.nocookie.net/sol-rng/images/3/3f/Glitch_Map.jpg", rare = true }
-local BIOMES = {
-	["Windy"] = { color = 0x87CEEB, icon = "https://static.wikia.nocookie.net/sol-rng/images/1/19/Windy_img%28fixed%29.png" },
-	["Snowy"] = { color = 0xFFFAFA, icon = "https://static.wikia.nocookie.net/sol-rng/images/d/d7/Snowy_img.png" },
-	["Rainy"] = { color = 0x4682B4, icon = "https://static.wikia.nocookie.net/sol-rng/images/e/ec/Rainy.png" },
-	["Sand Storm"] = { color = 0xEDC9AF, icon = "https://static.wikia.nocookie.net/sol-rng/images/7/7c/Sand_Storm.png" },
-	["Hell"] = { color = 0xFF0000, icon = "https://static.wikia.nocookie.net/sol-rng/images/b/b3/New_Hell_Biome.png" },
-	["Starfall"] = { color = 0x00008B, icon = "https://i.imgur.com/bgRcBzE.png" },
-	["Heaven"] = { color = 0xFFFFFF, icon = "https://static.wikia.nocookie.net/sol-rng/images/0/0a/HeavenBiomeInGame.png" },
-	["Corruption"] = { color = 0x8A2BE2, icon = "https://static.wikia.nocookie.net/sol-rng/images/8/80/CorruptionBiomeNew.png" },
-	["Null"] = { color = 0x808080, icon = "https://i.imgur.com/BmX8sKM.png" },
-	["Dreamspace"] = { color = 0xFF69B4, icon = "https://static.wikia.nocookie.net/sol-rng/images/4/48/Dreamspace_Biome.png", rare = true },
-	["Glitched"] = glitchData,
-	["GLITCHED"] = glitchData,
-	["Cyberspace"] = { color = 0x00FFFF, icon = "https://static.wikia.nocookie.net/sol-rng/images/a/aa/Cyberspace.jpg", rare = true },
-	["Singularity"] = { color = 0x000000, icon = "https://static.wikia.nocookie.net/sol-rng/images/f/f7/SingularityBiome.png", rare = true }
-}
-
-local recentMessages = {}
-local function handleChatMessage(text)
-	local now = os.clock()
-	for k, v in pairs(recentMessages) do
-		if now - v > 10 then recentMessages[k] = nil end
-	end
-
-	local plainText = string.gsub(text, "<[^>]+>", "")
-	local tag, content = string.match(plainText, "^%[%s*(.-)%s*%]:%s*(.*)")
-	if not tag then return end
-	
-	local msgHash = tag .. content
-	if recentMessages[msgHash] then return end
-	recentMessages[msgHash] = now
-	
-	local activeVip = ""
-	if type(SETTINGS.VIP_LINKS) == "table" then
-		for _, v in ipairs(SETTINGS.VIP_LINKS) do
-			if v.enabled and v.url ~= "" then
-				activeVip = v.url break
-			end
-		end
-	end
-	
-	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
-	local function sendWebhook(embed, pings)
 	
 	if BIOMES[tag] and SETTINGS.WH_BIOMES then
 		local bInfo = BIOMES[tag]
@@ -1464,6 +1389,114 @@ local function handleChatMessage(text)
 		sendWebhook(embed, pings)
 	end
 end
+local recentMessages = {}
+local function handleChatMessage(text)
+	local now = os.clock()
+	for k, v in pairs(recentMessages) do
+		if now - v > 10 then recentMessages[k] = nil end
+	end
+
+	local plainText = string.gsub(text, "<[^>]+>", "")
+	local tag, content = string.match(plainText, "^%[%s*(.-)%s*%]:%s*(.*)")
+	if not tag then return end
+	
+	local msgHash = tag .. content
+	if recentMessages[msgHash] then return end
+	recentMessages[msgHash] = now
+	
+	local activeVip = ""
+	if type(SETTINGS.VIP_LINKS) == "table" then
+		for _, v in ipairs(SETTINGS.VIP_LINKS) do
+			if v.enabled and v.url ~= "" then
+				activeVip = v.url break
+			end
+		end
+	end
+	
+	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
+	
+	if BIOMES[tag] and SETTINGS.WH_BIOMES then
+		local bInfo = BIOMES[tag]
+		local pings = {}
+		local isPinged = false
+		local pingBiomes = string.split(string.lower(SETTINGS.PING_BIOMES_LIST or ""), ",")
+		for _, pb in ipairs(pingBiomes) do
+			local cleanPb = string.match(pb, "^%s*(.-)%s*$")
+			if cleanPb ~= "" and string.find(string.lower(tag), cleanPb, 1, true) then
+				isPinged = true break
+			end
+		end
+		
+		if isPinged or (bInfo.rare and (SETTINGS.WH_PING_EVERYONE or SETTINGS.WH_PING_HERE)) then
+			if bInfo.rare and SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
+			if bInfo.rare and SETTINGS.WH_PING_HERE then table.insert(pings, "@here") end
+			for i = 1, 4 do
+				local uid = SETTINGS["PING_USER_"..i]
+				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+			end
+		end
+		
+		local embed = {
+			title = "🌍 Biome Updated: " .. tag,
+			description = content .. psLink,
+			color = bInfo.color,
+			thumbnail = { url = bInfo.icon },
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed, pings)
+	elseif tag == "Egg Spawned" and SETTINGS.WH_EGGS then
+		local pings = {}
+		local isPinged = false
+		local pingEggs = string.split(string.lower(SETTINGS.PING_EGGS_LIST or ""), ",")
+		for _, pe in ipairs(pingEggs) do
+			local cleanPe = string.match(pe, "^%s*(.-)%s*$")
+			if cleanPe ~= "" and string.find(string.lower(content), cleanPe, 1, true) then
+				isPinged = true break
+			end
+		end
+		
+		if isPinged then
+			for i = 1, 4 do
+				local uid = SETTINGS["PING_USER_"..i]
+				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+			end
+		end
+
+		local embed = {
+			title = "🥚 Egg Spawned",
+			description = content .. psLink,
+			color = 0xFFA500,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed, pings)
+	elseif tag == "Tip" and SETTINGS.WH_TIPS then
+		local embed = {
+			title = "💡 Tip",
+			description = content .. psLink,
+			color = 0x00FF00,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed)
+	elseif tag == "Merchant" then
+		local pings = {}
+		if string.find(string.lower(content), "jester") then
+			if SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
+			if SETTINGS.WH_PING_HERE then table.insert(pings, "@here") end
+			for i = 1, 4 do
+				local uid = SETTINGS["PING_USER_"..i]
+				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+			end
+		end
+		local embed = {
+			title = "🛒 Merchant Arrived",
+			description = content .. psLink,
+			color = 0x800080,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed, pings)
+	end
+end
+
 
 task.spawn(function()
 	local TextChatService = game:GetService("TextChatService")
