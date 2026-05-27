@@ -775,8 +775,8 @@ local SETTINGS = {
 	AUTO_EQUIP_ABYSSAL = false,
 	ESP_ENABLED        = true,
 	MAX_EGG_HEIGHT     = 130,
-	WEBHOOK_URL        = "",
-	PRIV_SERVER_LINK   = "",
+	WEBHOOKS           = {},
+	VIP_LINKS          = {},
 	PING_USER_1        = "",
 	PING_USER_2        = "",
 	PING_USER_3        = "",
@@ -841,6 +841,7 @@ local function createTextBox(parent, text, settingKey, placeholder)
 	input.PlaceholderText = placeholder or ""
 	input.Text = SETTINGS[settingKey] and tostring(SETTINGS[settingKey]) or ""
 	input.ClearTextOnFocus = false
+	input.TextTruncate = Enum.TextTruncate.AtEnd
 	input.Parent = container
 	applyCorner(input, 4)
 	applyStroke(input, theme.Stroke, 1)
@@ -849,6 +850,164 @@ local function createTextBox(parent, text, settingKey, placeholder)
 		SETTINGS[settingKey] = input.Text
 		saveConfig()
 	end)
+end
+
+local function createListManager(parent, title, placeholder, settingKey)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, 0, 0, 0)
+	container.AutomaticSize = Enum.AutomaticSize.Y
+	container.BackgroundColor3 = theme.Sidebar
+	container.Parent = parent
+	applyCorner(container, 8)
+	applyStroke(container, theme.Stroke, 1)
+
+	local header = Instance.new("Frame")
+	header.Size = UDim2.new(1, 0, 0, 30)
+	header.BackgroundTransparency = 1
+	header.Parent = container
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -20, 1, 0)
+	titleLbl.Position = UDim2.new(0, 10, 0, 0)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = title
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = header
+
+	local inputContainer = Instance.new("Frame")
+	inputContainer.Size = UDim2.new(1, -20, 0, 30)
+	inputContainer.Position = UDim2.new(0, 10, 0, 30)
+	inputContainer.BackgroundColor3 = theme.ItemBG
+	inputContainer.Parent = container
+	applyCorner(inputContainer, 4)
+	applyStroke(inputContainer, theme.Stroke, 1)
+
+	local input = Instance.new("TextBox")
+	input.Size = UDim2.new(1, -70, 1, 0)
+	input.Position = UDim2.new(0, 5, 0, 0)
+	input.BackgroundTransparency = 1
+	input.TextColor3 = theme.TextPrimary
+	input.Font = Enum.Font.Gotham
+	input.TextSize = 12
+	input.TextXAlignment = Enum.TextXAlignment.Left
+	input.PlaceholderText = placeholder
+	input.Text = ""
+	input.ClearTextOnFocus = false
+	input.TextTruncate = Enum.TextTruncate.AtEnd
+	input.Parent = inputContainer
+
+	local saveBtn = Instance.new("TextButton")
+	saveBtn.Size = UDim2.new(0, 55, 1, -4)
+	saveBtn.Position = UDim2.new(1, -57, 0, 2)
+	saveBtn.BackgroundColor3 = theme.Accent
+	saveBtn.Text = "Save"
+	saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	saveBtn.Font = Enum.Font.GothamBold
+	saveBtn.TextSize = 12
+	saveBtn.Parent = inputContainer
+	applyCorner(saveBtn, 4)
+
+	local listContainer = Instance.new("Frame")
+	listContainer.Size = UDim2.new(1, -20, 0, 0)
+	listContainer.Position = UDim2.new(0, 10, 0, 70)
+	listContainer.AutomaticSize = Enum.AutomaticSize.Y
+	listContainer.BackgroundTransparency = 1
+	listContainer.Parent = container
+
+	local layout = Instance.new("UIListLayout")
+	layout.Parent = listContainer
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 5)
+
+	local padding = Instance.new("UIPadding")
+	padding.PaddingBottom = UDim.new(0, 10)
+	padding.Parent = container
+
+	local function renderList()
+		for _, child in ipairs(listContainer:GetChildren()) do
+			if child:IsA("Frame") then child:Destroy() end
+		end
+
+		local items = SETTINGS[settingKey]
+		if type(items) ~= "table" then items = {} SETTINGS[settingKey] = items end
+
+		for i, item in ipairs(items) do
+			local panel = Instance.new("Frame")
+			panel.Size = UDim2.new(1, 0, 0, 36)
+			panel.BackgroundColor3 = theme.ItemBG
+			panel.Parent = listContainer
+			applyCorner(panel, 6)
+			applyStroke(panel, theme.Stroke, 1)
+
+			local urlLbl = Instance.new("TextLabel")
+			urlLbl.Size = UDim2.new(1, -95, 1, 0)
+			urlLbl.Position = UDim2.new(0, 10, 0, 0)
+			urlLbl.BackgroundTransparency = 1
+			urlLbl.Text = item.url
+			urlLbl.TextColor3 = theme.TextSecondary
+			urlLbl.Font = Enum.Font.Gotham
+			urlLbl.TextSize = 11
+			urlLbl.TextXAlignment = Enum.TextXAlignment.Left
+			urlLbl.TextTruncate = Enum.TextTruncate.AtEnd
+			urlLbl.Parent = panel
+
+			local toggleBtn = Instance.new("TextButton")
+			toggleBtn.Size = UDim2.new(0, 36, 0, 20)
+			toggleBtn.Position = UDim2.new(1, -76, 0.5, -10)
+			toggleBtn.BackgroundColor3 = item.enabled and theme.Success or theme.Background
+			toggleBtn.Text = ""
+			toggleBtn.Parent = panel
+			applyCorner(toggleBtn, 10)
+			applyStroke(toggleBtn, theme.Stroke, 1)
+
+			local knob = Instance.new("Frame")
+			knob.Size = UDim2.new(0, 14, 0, 14)
+			knob.Position = item.enabled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+			knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+			knob.BorderSizePixel = 0
+			knob.Parent = toggleBtn
+			applyCorner(knob, 7)
+
+			toggleBtn.MouseButton1Click:Connect(function()
+				item.enabled = not item.enabled
+				saveConfig()
+				renderList()
+			end)
+
+			local delBtn = Instance.new("TextButton")
+			delBtn.Size = UDim2.new(0, 24, 0, 24)
+			delBtn.Position = UDim2.new(1, -30, 0.5, -12)
+			delBtn.BackgroundColor3 = theme.Danger
+			delBtn.Text = "X"
+			delBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			delBtn.Font = Enum.Font.GothamBold
+			delBtn.TextSize = 12
+			delBtn.Parent = panel
+			applyCorner(delBtn, 4)
+
+			delBtn.MouseButton1Click:Connect(function()
+				table.remove(SETTINGS[settingKey], i)
+				saveConfig()
+				renderList()
+			end)
+		end
+	end
+
+	saveBtn.MouseButton1Click:Connect(function()
+		local txt = input.Text
+		if txt ~= "" then
+			if type(SETTINGS[settingKey]) ~= "table" then SETTINGS[settingKey] = {} end
+			table.insert(SETTINGS[settingKey], {url = txt, enabled = true})
+			input.Text = ""
+			saveConfig()
+			renderList()
+		end
+	end)
+
+	renderList()
 end
 loadConfig()
 
@@ -1004,8 +1163,8 @@ createToggle(secConfig, "Auto Equip Abyssal", "AUTO_EQUIP_ABYSSAL")
 createToggle(secConfig, "Egg ESP (Highlight)", "ESP_ENABLED")
 
 local secWhMain = createSection(pageWebhooks, "Main Settings")
-createTextBox(secWhMain, "Webhook URL", "WEBHOOK_URL", "https://discord.com/api/webhooks/...")
-createTextBox(secWhMain, "Private Server Link", "PRIV_SERVER_LINK", "https://www.roblox.com/games/...")
+createListManager(secWhMain, "Webhooks", "https://discord.com/api/webhooks/...", "WEBHOOKS")
+createListManager(secWhMain, "Private Server Links", "https://www.roblox.com/games/...", "VIP_LINKS")
 
 local secWhEvents = createSection(pageWebhooks, "Event Triggers")
 createToggle(secWhEvents, "Send Biome Spawns", "WH_BIOMES")
@@ -1074,7 +1233,7 @@ creditLbl.TextXAlignment = Enum.TextXAlignment.Center
 creditLbl.Parent = pageUpdates
 
 local function sendWebhook(embed, pings)
-	if not SETTINGS.WEBHOOK_URL or SETTINGS.WEBHOOK_URL == "" then return end
+	if type(SETTINGS.WEBHOOKS) ~= "table" or #SETTINGS.WEBHOOKS == 0 then return end
 	local contentStr = ""
 	if pings and #pings > 0 then contentStr = table.concat(pings, " ") end
 	
@@ -1087,15 +1246,20 @@ local function sendWebhook(embed, pings)
 	
 	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 	if _req then
+		local payload = HttpService:JSONEncode(data)
 		task.spawn(function()
-			pcall(function()
-				_req({
-					Url = SETTINGS.WEBHOOK_URL,
-					Method = "POST",
-					Headers = {["Content-Type"] = "application/json"},
-					Body = HttpService:JSONEncode(data)
-				})
-			end)
+			for _, wh in ipairs(SETTINGS.WEBHOOKS) do
+				if wh.enabled and wh.url and wh.url ~= "" then
+					pcall(function()
+						_req({
+							Url = wh.url,
+							Method = "POST",
+							Headers = {["Content-Type"] = "application/json"},
+							Body = payload
+						})
+					end)
+				end
+			end
 		end)
 	end
 end
@@ -1118,12 +1282,105 @@ local BIOMES = {
 	["Singularity"] = { color = 0x000000, icon = "https://static.wikia.nocookie.net/sol-rng/images/f/f7/SingularityBiome.png", rare = true }
 }
 
+local recentMessages = {}
 local function handleChatMessage(text)
+	local now = os.clock()
+	for k, v in pairs(recentMessages) do
+		if now - v > 10 then recentMessages[k] = nil end
+	end
+
 	local plainText = string.gsub(text, "<[^>]+>", "")
 	local tag, content = string.match(plainText, "^%[%s*(.-)%s*%]:%s*(.*)")
 	if not tag then return end
 	
-	local psLink = (SETTINGS.PRIV_SERVER_LINK ~= "") and ("\n\n**Private Server:** [Click to Join]("..SETTINGS.PRIV_SERVER_LINK..")") or ""
+	local msgHash = tag .. content
+	if recentMessages[msgHash] then return end
+	recentMessages[msgHash] = now
+	
+	local activeVip = ""
+	if type(SETTINGS.VIP_LINKS) == "table" then
+		for _, v in ipairs(SETTINGS.VIP_LINKS) do
+			if v.enabled and v.url ~= "" then
+				activeVip = v.url break
+			end
+		end
+	end
+	
+	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""local function sendWebhook(embed, pings)
+	if type(SETTINGS.WEBHOOKS) ~= "table" or #SETTINGS.WEBHOOKS == 0 then return end
+	local contentStr = ""
+	if pings and #pings > 0 then contentStr = table.concat(pings, " ") end
+	
+	local data = {
+		content = contentStr ~= "" and contentStr or nil,
+		embeds = {embed},
+		username = "NK Farm Webhook",
+		avatar_url = "https://i.imgur.com/71G0O4R.png"
+	}
+	
+	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+	if _req then
+		local payload = HttpService:JSONEncode(data)
+		task.spawn(function()
+			for _, wh in ipairs(SETTINGS.WEBHOOKS) do
+				if wh.enabled and wh.url and wh.url ~= "" then
+					pcall(function()
+						_req({
+							Url = wh.url,
+							Method = "POST",
+							Headers = {["Content-Type"] = "application/json"},
+							Body = payload
+						})
+					end)
+				end
+			end
+		end)
+	end
+end
+
+local glitchData = { color = 0x00FF00, icon = "https://static.wikia.nocookie.net/sol-rng/images/3/3f/Glitch_Map.jpg", rare = true }
+local BIOMES = {
+	["Windy"] = { color = 0x87CEEB, icon = "https://static.wikia.nocookie.net/sol-rng/images/1/19/Windy_img%28fixed%29.png" },
+	["Snowy"] = { color = 0xFFFAFA, icon = "https://static.wikia.nocookie.net/sol-rng/images/d/d7/Snowy_img.png" },
+	["Rainy"] = { color = 0x4682B4, icon = "https://static.wikia.nocookie.net/sol-rng/images/e/ec/Rainy.png" },
+	["Sand Storm"] = { color = 0xEDC9AF, icon = "https://static.wikia.nocookie.net/sol-rng/images/7/7c/Sand_Storm.png" },
+	["Hell"] = { color = 0xFF0000, icon = "https://static.wikia.nocookie.net/sol-rng/images/b/b3/New_Hell_Biome.png" },
+	["Starfall"] = { color = 0x00008B, icon = "https://i.imgur.com/bgRcBzE.png" },
+	["Heaven"] = { color = 0xFFFFFF, icon = "https://static.wikia.nocookie.net/sol-rng/images/0/0a/HeavenBiomeInGame.png" },
+	["Corruption"] = { color = 0x8A2BE2, icon = "https://static.wikia.nocookie.net/sol-rng/images/8/80/CorruptionBiomeNew.png" },
+	["Null"] = { color = 0x808080, icon = "https://i.imgur.com/BmX8sKM.png" },
+	["Dreamspace"] = { color = 0xFF69B4, icon = "https://static.wikia.nocookie.net/sol-rng/images/4/48/Dreamspace_Biome.png", rare = true },
+	["Glitched"] = glitchData,
+	["GLITCHED"] = glitchData,
+	["Cyberspace"] = { color = 0x00FFFF, icon = "https://static.wikia.nocookie.net/sol-rng/images/a/aa/Cyberspace.jpg", rare = true },
+	["Singularity"] = { color = 0x000000, icon = "https://static.wikia.nocookie.net/sol-rng/images/f/f7/SingularityBiome.png", rare = true }
+}
+
+local recentMessages = {}
+local function handleChatMessage(text)
+	local now = os.clock()
+	for k, v in pairs(recentMessages) do
+		if now - v > 10 then recentMessages[k] = nil end
+	end
+
+	local plainText = string.gsub(text, "<[^>]+>", "")
+	local tag, content = string.match(plainText, "^%[%s*(.-)%s*%]:%s*(.*)")
+	if not tag then return end
+	
+	local msgHash = tag .. content
+	if recentMessages[msgHash] then return end
+	recentMessages[msgHash] = now
+	
+	local activeVip = ""
+	if type(SETTINGS.VIP_LINKS) == "table" then
+		for _, v in ipairs(SETTINGS.VIP_LINKS) do
+			if v.enabled and v.url ~= "" then
+				activeVip = v.url break
+			end
+		end
+	end
+	
+	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
 	
 	if BIOMES[tag] and SETTINGS.WH_BIOMES then
 		local bInfo = BIOMES[tag]
@@ -1433,9 +1690,24 @@ local function collectEgg(egg)
 	STATE.eggsCollected = STATE.eggsCollected + 1
 	STATE.eggsSinceLastWH = STATE.eggsSinceLastWH + 1
 	
-	if SETTINGS.WEBHOOK_URL and SETTINGS.WEBHOOK_URL ~= "" and STATE.eggsSinceLastWH >= SETTINGS.WH_EGG_COUNT then
+	local hasActiveWh = false
+	if type(SETTINGS.WEBHOOKS) == "table" then
+		for _, wh in ipairs(SETTINGS.WEBHOOKS) do
+			if wh.enabled and wh.url ~= "" then hasActiveWh = true break end
+		end
+	end
+
+	if hasActiveWh and STATE.eggsSinceLastWH >= SETTINGS.WH_EGG_COUNT then
 		STATE.eggsSinceLastWH = 0
-		local psLink = (SETTINGS.PRIV_SERVER_LINK ~= "") and ("\n\n**Private Server:** [Click to Join]("..SETTINGS.PRIV_SERVER_LINK..")") or ""
+		
+		local activeVip = ""
+		if type(SETTINGS.VIP_LINKS) == "table" then
+			for _, v in ipairs(SETTINGS.VIP_LINKS) do
+				if v.enabled and v.url ~= "" then activeVip = v.url break end
+			end
+		end
+		
+		local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
 		local embed = {
 			title = "🎉 Milestone Reached",
 			description = "Collected **" .. STATE.eggsCollected .. "** eggs so far!" .. psLink,
