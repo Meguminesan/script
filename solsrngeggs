@@ -1449,7 +1449,7 @@ local function addUpdate(version, date, changes)
 	padding.Parent = f
 end
 
-addUpdate("1.1.0", "May 28, 2026", "- Added Discord Webhooks support.\n- Added custom triggers for Biomes, Eggs, Tips.\n- Added User ID Ping configurations.\n- Enhanced Anti-Detect measures.\n- Configs now save per-user.")
+addUpdate("1.2.0", "May 28, 2026", "- Added Discord Webhooks support.\n- Added custom triggers for Biomes, Eggs, Tips, Merchants.\n- Added User ID Ping configurations.\n- Enhanced Anti-Detect measures.\n- Configs now save per-user.\n- Enhanced Key System with auto-auth.\nIn next update - Merchant ESP, Auras Webhooks.")
 
 local creditLbl = Instance.new("TextLabel")
 creditLbl.Size = UDim2.new(1, 0, 0, 20)
