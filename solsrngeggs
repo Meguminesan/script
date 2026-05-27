@@ -1,4 +1,5 @@
 -- Scripted by @neko.js
+getgenv().NK_Farm_Unloaded = false
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -34,6 +35,7 @@ screenGui.Parent = targetParent
 
 local vu = game:GetService("VirtualUser")
 player.Idled:Connect(function()
+	if getgenv().NK_Farm_Unloaded then return end
 	vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
 	task.wait(1)
 	vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
@@ -533,8 +535,72 @@ closeBtn.MouseLeave:Connect(function()
 	TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
 end)
 closeBtn.MouseButton1Click:Connect(function()
-	screenGui:Destroy()
+	local confirmFrame = Instance.new("Frame")
+	confirmFrame.Size = UDim2.new(0, 300, 0, 150)
+	confirmFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+	confirmFrame.BackgroundColor3 = theme.Background
+	confirmFrame.ZIndex = 100
+	confirmFrame.Parent = screenGui
+	applyCorner(confirmFrame, 12)
+	applyStroke(confirmFrame, theme.Danger, 2)
+
+	local warnTitle = Instance.new("TextLabel")
+	warnTitle.Size = UDim2.new(1, 0, 0, 30)
+	warnTitle.Position = UDim2.new(0, 0, 0, 10)
+	warnTitle.BackgroundTransparency = 1
+	warnTitle.Text = "Warning!"
+	warnTitle.TextColor3 = theme.Danger
+	warnTitle.Font = Enum.Font.GothamBold
+	warnTitle.TextSize = 18
+	warnTitle.ZIndex = 101
+	warnTitle.Parent = confirmFrame
+
+	local warnDesc = Instance.new("TextLabel")
+	warnDesc.Size = UDim2.new(1, -20, 0, 50)
+	warnDesc.Position = UDim2.new(0, 10, 0, 40)
+	warnDesc.BackgroundTransparency = 1
+	warnDesc.Text = "Are you sure you want to close?\nAll functions and webhooks will stop."
+	warnDesc.TextColor3 = theme.TextPrimary
+	warnDesc.Font = Enum.Font.Gotham
+	warnDesc.TextSize = 13
+	warnDesc.TextWrapped = true
+	warnDesc.ZIndex = 101
+	warnDesc.Parent = confirmFrame
+
+	local yesBtn = Instance.new("TextButton")
+	yesBtn.Size = UDim2.new(0, 100, 0, 35)
+	yesBtn.Position = UDim2.new(0, 30, 0, 100)
+	yesBtn.BackgroundColor3 = theme.Danger
+	yesBtn.Text = "Yes, Close"
+	yesBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	yesBtn.Font = Enum.Font.GothamBold
+	yesBtn.TextSize = 14
+	yesBtn.ZIndex = 101
+	yesBtn.Parent = confirmFrame
+	applyCorner(yesBtn, 8)
+
+	local noBtn = Instance.new("TextButton")
+	noBtn.Size = UDim2.new(0, 100, 0, 35)
+	noBtn.Position = UDim2.new(1, -130, 0, 100)
+	noBtn.BackgroundColor3 = theme.Sidebar
+	noBtn.Text = "Cancel"
+	noBtn.TextColor3 = theme.TextPrimary
+	noBtn.Font = Enum.Font.GothamBold
+	noBtn.TextSize = 14
+	noBtn.ZIndex = 101
+	noBtn.Parent = confirmFrame
+	applyCorner(noBtn, 8)
+
+	noBtn.MouseButton1Click:Connect(function()
+		confirmFrame:Destroy()
+	end)
+
+	yesBtn.MouseButton1Click:Connect(function()
+		getgenv().NK_Farm_Unloaded = true
+		screenGui:Destroy()
+	end)
 end)
+
 
 local minimizeBtn = Instance.new("TextButton")
 minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
@@ -1447,6 +1513,7 @@ local BIOMES = {
 
 local recentMessages = {}
 local function handleChatMessage(text)
+	if getgenv().NK_Farm_Unloaded then return end
 	local now = os.clock()
 	for k, v in pairs(recentMessages) do
 		if now - v > 10 then recentMessages[k] = nil end
@@ -1554,6 +1621,7 @@ local function handleChatMessage(text)
 end
 local recentMessages = {}
 local function handleChatMessage(text)
+	if getgenv().NK_Farm_Unloaded then return end
 	local now = os.clock()
 	for k, v in pairs(recentMessages) do
 		if now - v > 10 then recentMessages[k] = nil end
@@ -1755,6 +1823,7 @@ local STATE = {
 local ignoredEggs = setmetatable({}, {__mode = "k"})
 
 game:GetService("LogService").MessageOut:Connect(function(message)
+	if getgenv().NK_Farm_Unloaded then return end
 	if message:match("Invalid egg") and STATE.currentEggInstance then
 		ignoredEggs[STATE.currentEggInstance] = true
 	end
@@ -1826,20 +1895,24 @@ for _, obj in ipairs(workspace:GetDescendants()) do
 	checkAndCacheEgg(obj)
 end
 
-workspace.DescendantAdded:Connect(checkAndCacheEgg)
+workspace.DescendantAdded:Connect(function(obj)
+	if not getgenv().NK_Farm_Unloaded then checkAndCacheEgg(obj) end
+end)
 workspace.DescendantRemoving:Connect(function(obj)
 	eggCache[obj] = nil
 end)
 
 task.spawn(function()
 	while task.wait(1) do
-		for obj in pairs(eggCache) do
-			if obj.Parent then
-				applyESP(obj)
-			else
-				eggCache[obj] = nil
+		if getgenv().NK_Farm_Unloaded then
+			for obj in pairs(eggCache) do
+				local hl = obj:FindFirstChild("EggESP")
+				if hl then hl:Destroy() end
 			end
+			table.clear(eggCache)
+			break
 		end
+		for obj in pairs(eggCache) do
 	end
 end)
 
@@ -2224,6 +2297,7 @@ local function mainLoop()
 	fixMapGeometry()
 	guiLog("Farming started!", theme.Success)
 	while STATE.running do
+		if getgenv().NK_Farm_Unloaded then STATE.running = false break end
 		if SETTINGS.AUTO_EQUIP_ABYSSAL and rootPart and not rootPart:FindFirstChild("FishSpin") then
 			autoEquipAbyssal() task.wait(0.5)
 		end
