@@ -1619,115 +1619,6 @@ local function handleChatMessage(text)
 		sendWebhook(embed, pings)
 	end
 end
-local recentMessages = {}
-local function handleChatMessage(text)
-	if getgenv().NK_Farm_Unloaded then return end
-	local now = os.clock()
-	for k, v in pairs(recentMessages) do
-		if now - v > 10 then recentMessages[k] = nil end
-	end
-
-	local plainText = string.gsub(text, "<[^>]+>", "")
-	local tag, content = string.match(plainText, "^%[%s*(.-)%s*%]:%s*(.*)")
-	if not tag then return end
-	
-	local msgHash = tag .. content
-	if recentMessages[msgHash] then return end
-	recentMessages[msgHash] = now
-	
-	local activeVip = ""
-	if type(SETTINGS.VIP_LINKS) == "table" then
-		for _, v in ipairs(SETTINGS.VIP_LINKS) do
-			if v.enabled and v.url ~= "" then
-				activeVip = v.url break
-			end
-		end
-	end
-	
-	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
-	
-	if BIOMES[tag] and SETTINGS.WH_BIOMES then
-		local bInfo = BIOMES[tag]
-		local pings = {}
-		local isPinged = false
-		local pingBiomes = string.split(string.lower(SETTINGS.PING_BIOMES_LIST or ""), ",")
-		for _, pb in ipairs(pingBiomes) do
-			local cleanPb = string.match(pb, "^%s*(.-)%s*$")
-			if cleanPb ~= "" and string.find(string.lower(tag), cleanPb, 1, true) then
-				isPinged = true break
-			end
-		end
-		
-		if isPinged or (bInfo.rare and (SETTINGS.WH_PING_EVERYONE or SETTINGS.WH_PING_HERE)) then
-			if bInfo.rare and SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
-			if bInfo.rare and SETTINGS.WH_PING_HERE then table.insert(pings, "@here") end
-			for i = 1, 4 do
-				local uid = SETTINGS["PING_USER_"..i]
-				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
-			end
-		end
-		
-		local embed = {
-			title = "🌍 Biome Updated: " .. tag,
-			description = content .. psLink,
-			color = bInfo.color,
-			thumbnail = { url = bInfo.icon },
-			timestamp = DateTime.now():ToIsoDate()
-		}
-		sendWebhook(embed, pings)
-	elseif tag == "Egg Spawned" and SETTINGS.WH_EGGS then
-		local pings = {}
-		local isPinged = false
-		local pingEggs = string.split(string.lower(SETTINGS.PING_EGGS_LIST or ""), ",")
-		for _, pe in ipairs(pingEggs) do
-			local cleanPe = string.match(pe, "^%s*(.-)%s*$")
-			if cleanPe ~= "" and string.find(string.lower(content), cleanPe, 1, true) then
-				isPinged = true break
-			end
-		end
-		
-		if isPinged then
-			for i = 1, 4 do
-				local uid = SETTINGS["PING_USER_"..i]
-				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
-			end
-		end
-
-		local embed = {
-			title = "🥚 Egg Spawned",
-			description = content .. psLink,
-			color = 0xFFA500,
-			timestamp = DateTime.now():ToIsoDate()
-		}
-		sendWebhook(embed, pings)
-	elseif tag == "Tip" and SETTINGS.WH_TIPS then
-		local embed = {
-			title = "💡 Tip",
-			description = content .. psLink,
-			color = 0x00FF00,
-			timestamp = DateTime.now():ToIsoDate()
-		}
-		sendWebhook(embed)
-	elseif tag == "Merchant" then
-		local pings = {}
-		if string.find(string.lower(content), "jester") then
-			if SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
-			if SETTINGS.WH_PING_HERE then table.insert(pings, "@here") end
-			for i = 1, 4 do
-				local uid = SETTINGS["PING_USER_"..i]
-				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
-			end
-		end
-		local embed = {
-			title = "🛒 Merchant Arrived",
-			description = content .. psLink,
-			color = 0x800080,
-			timestamp = DateTime.now():ToIsoDate()
-		}
-		sendWebhook(embed, pings)
-	end
-end
-
 
 task.spawn(function()
 	local TextChatService = game:GetService("TextChatService")
@@ -1912,7 +1803,6 @@ task.spawn(function()
 			table.clear(eggCache)
 			break
 		end
-		for obj in pairs(eggCache) do
 	end
 end)
 
