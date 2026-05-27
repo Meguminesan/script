@@ -1306,7 +1306,7 @@ local function handleChatMessage(text)
 		end
 	end
 	
-	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""local function sendWebhook(embed, pings)
+	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
 	if type(SETTINGS.WEBHOOKS) ~= "table" or #SETTINGS.WEBHOOKS == 0 then return end
 	local contentStr = ""
 	if pings and #pings > 0 then contentStr = table.concat(pings, " ") end
