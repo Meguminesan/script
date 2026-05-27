@@ -133,10 +133,20 @@ local function sendNotification(title, desc, color)
 	end)
 end
 
+local AUTH_FILE = "NK_Auth_" .. tostring(player.UserId) .. ".txt"
+local function checkAuth()
+	if readfile and isfile and isfile(AUTH_FILE) then
+		local exp = tonumber(readfile(AUTH_FILE))
+		if exp and os.time() < exp then return true end
+	end
+	return false
+end
+local rememberMe = false
+
 local keyFrame = Instance.new("Frame")
 keyFrame.Name = "KeyFrame"
-keyFrame.Size = UDim2.new(0, 350, 0, 200)
-keyFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+keyFrame.Size = UDim2.new(0, 380, 0, 250)
+keyFrame.Position = UDim2.new(0.5, -190, 0.5, -125)
 keyFrame.BackgroundColor3 = theme.Background
 keyFrame.BorderSizePixel = 0
 keyFrame.Active = true
@@ -146,16 +156,17 @@ applyStroke(keyFrame, theme.Stroke, 1)
 
 local keyTitle = Instance.new("TextLabel")
 keyTitle.Size = UDim2.new(1, 0, 0, 40)
+keyTitle.Position = UDim2.new(0, 0, 0, 10)
 keyTitle.BackgroundTransparency = 1
-keyTitle.Text = "Neko Key Authentication"
+keyTitle.Text = "Neko Authentication"
 keyTitle.TextColor3 = theme.TextPrimary
 keyTitle.Font = Enum.Font.GothamBold
-keyTitle.TextSize = 18
+keyTitle.TextSize = 20
 keyTitle.Parent = keyFrame
 
 local keyInput = Instance.new("TextBox")
-keyInput.Size = UDim2.new(0, 280, 0, 40)
-keyInput.Position = UDim2.new(0.5, -140, 0.5, -20)
+keyInput.Size = UDim2.new(0, 300, 0, 40)
+keyInput.Position = UDim2.new(0.5, -150, 0, 65)
 keyInput.BackgroundColor3 = theme.ItemBG
 keyInput.TextColor3 = theme.TextPrimary
 keyInput.Font = Enum.Font.Gotham
@@ -165,6 +176,137 @@ keyInput.Text = ""
 keyInput.Parent = keyFrame
 applyCorner(keyInput, 8)
 applyStroke(keyInput, theme.Stroke, 1)
+
+local remContainer = Instance.new("Frame")
+remContainer.Size = UDim2.new(0, 300, 0, 30)
+remContainer.Position = UDim2.new(0.5, -150, 0, 115)
+remContainer.BackgroundTransparency = 1
+remContainer.Parent = keyFrame
+
+local remBtn = Instance.new("TextButton")
+remBtn.Size = UDim2.new(0, 24, 0, 24)
+remBtn.Position = UDim2.new(0, 0, 0.5, -12)
+remBtn.BackgroundColor3 = theme.ItemBG
+remBtn.Text = ""
+remBtn.Parent = remContainer
+applyCorner(remBtn, 6)
+local remStroke = applyStroke(remBtn, theme.Stroke, 1)
+
+local remCheck = Instance.new("TextLabel")
+remCheck.Size = UDim2.new(1, 0, 1, 0)
+remCheck.BackgroundTransparency = 1
+remCheck.Text = "✓"
+remCheck.TextColor3 = theme.Success
+remCheck.Font = Enum.Font.GothamBold
+remCheck.TextSize = 18
+remCheck.Visible = false
+remCheck.Parent = remBtn
+
+local remLbl = Instance.new("TextLabel")
+remLbl.Size = UDim2.new(1, -35, 1, 0)
+remLbl.Position = UDim2.new(0, 35, 0, 0)
+remLbl.BackgroundTransparency = 1
+remLbl.Text = "Remember me (3 Days)"
+remLbl.TextColor3 = theme.TextSecondary
+remLbl.Font = Enum.Font.Gotham
+remLbl.TextSize = 13
+remLbl.TextXAlignment = Enum.TextXAlignment.Left
+remLbl.Parent = remContainer
+
+remBtn.MouseButton1Click:Connect(function()
+	rememberMe = not rememberMe
+	remCheck.Visible = rememberMe
+	remStroke.Color = rememberMe and theme.Success or theme.Stroke
+end)
+
+local copyLinkBtn = Instance.new("TextButton")
+copyLinkBtn.Size = UDim2.new(0, 140, 0, 35)
+copyLinkBtn.Position = UDim2.new(0.5, -150, 1, -55)
+copyLinkBtn.BackgroundColor3 = theme.Sidebar
+copyLinkBtn.TextColor3 = theme.TextPrimary
+copyLinkBtn.Font = Enum.Font.GothamBold
+copyLinkBtn.TextSize = 14
+copyLinkBtn.Text = "Get Key"
+copyLinkBtn.Parent = keyFrame
+applyCorner(copyLinkBtn, 8)
+applyStroke(copyLinkBtn, theme.Stroke, 1)
+
+copyLinkBtn.MouseButton1Click:Connect(function()
+	if setclipboard then
+		setclipboard("https://discord.gg/neko")
+		copyLinkBtn.Text = "Copied!"
+		task.wait(1.5)
+		copyLinkBtn.Text = "Get Key"
+	end
+end)
+
+local submitBtn = Instance.new("TextButton")
+submitBtn.Size = UDim2.new(0, 140, 0, 35)
+submitBtn.Position = UDim2.new(0.5, 10, 1, -55)
+submitBtn.BackgroundColor3 = theme.Accent
+submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitBtn.Font = Enum.Font.GothamBold
+submitBtn.TextSize = 14
+submitBtn.Text = "Verify"
+submitBtn.Parent = keyFrame
+applyCorner(submitBtn, 8)
+
+local welcomeFrame = Instance.new("Frame")
+welcomeFrame.Name = "WelcomeFrame"
+welcomeFrame.Size = UDim2.new(0, 400, 0, 220)
+welcomeFrame.Position = UDim2.new(0.5, -200, 0.5, -110)
+welcomeFrame.BackgroundColor3 = theme.Background
+welcomeFrame.BorderSizePixel = 0
+welcomeFrame.Visible = false
+welcomeFrame.Parent = screenGui
+applyCorner(welcomeFrame, 12)
+applyStroke(welcomeFrame, theme.Stroke, 1)
+
+local welcomeScale = Instance.new("UIScale")
+welcomeScale.Scale = 0
+welcomeScale.Parent = welcomeFrame
+
+local wlAvatar = Instance.new("ImageLabel")
+wlAvatar.Size = UDim2.new(0, 70, 0, 70)
+wlAvatar.Position = UDim2.new(0.5, -35, 0, 25)
+wlAvatar.BackgroundColor3 = theme.ItemBG
+pcall(function() wlAvatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150) end)
+wlAvatar.Parent = welcomeFrame
+applyCorner(wlAvatar, 35)
+applyStroke(wlAvatar, theme.Accent, 2)
+
+local wlTitle = Instance.new("TextLabel")
+wlTitle.Size = UDim2.new(1, 0, 0, 25)
+wlTitle.Position = UDim2.new(0, 0, 0, 105)
+wlTitle.BackgroundTransparency = 1
+wlTitle.Text = "Welcome, " .. player.DisplayName .. "!"
+wlTitle.TextColor3 = theme.TextPrimary
+wlTitle.Font = Enum.Font.GothamBold
+wlTitle.TextSize = 18
+wlTitle.TextXAlignment = Enum.TextXAlignment.Center
+wlTitle.Parent = welcomeFrame
+
+local wlUser = Instance.new("TextLabel")
+wlUser.Size = UDim2.new(1, 0, 0, 20)
+wlUser.Position = UDim2.new(0, 0, 0, 130)
+wlUser.BackgroundTransparency = 1
+wlUser.Text = "@" .. player.Name .. "  •  ID: " .. player.UserId
+wlUser.TextColor3 = theme.TextSecondary
+wlUser.Font = Enum.Font.Gotham
+wlUser.TextSize = 13
+wlUser.TextXAlignment = Enum.TextXAlignment.Center
+wlUser.Parent = welcomeFrame
+
+local wlThanks = Instance.new("TextLabel")
+wlThanks.Size = UDim2.new(1, 0, 0, 20)
+wlThanks.Position = UDim2.new(0, 0, 0, 165)
+wlThanks.BackgroundTransparency = 1
+wlThanks.Text = "Thank you for using NK - Egg Farming!"
+wlThanks.TextColor3 = theme.Accent
+wlThanks.Font = Enum.Font.GothamBold
+wlThanks.TextSize = 14
+wlThanks.TextXAlignment = Enum.TextXAlignment.Center
+wlThanks.Parent = welcomeFrame
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
@@ -210,70 +352,89 @@ floatIconBtn.MouseButton1Click:Connect(function()
 	TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 end)
 
-local submitBtn = Instance.new("TextButton")
-submitBtn.Size = UDim2.new(0, 130, 0, 35)
-submitBtn.Position = UDim2.new(0.5, -65, 1, -50)
-submitBtn.BackgroundColor3 = theme.Accent
-submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-submitBtn.Font = Enum.Font.GothamBold
-submitBtn.TextSize = 14
-submitBtn.Text = "Verify"
-submitBtn.Parent = keyFrame
-applyCorner(submitBtn, 8)
+local function proceedToMain()
+	keyFrame.Visible = false
+	welcomeFrame.Visible = true
+	local tw1 = TweenService:Create(welcomeScale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+	tw1:Play()
+	tw1.Completed:Wait()
+	
+	task.wait(3)
+	
+	local tw2 = TweenService:Create(welcomeScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
+	tw2:Play()
+	tw2.Completed:Wait()
+	
+	welcomeFrame.Visible = false
+	mainFrame.Visible = true
+	mainScale.Scale = 0
+	TweenService:Create(mainScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	sendNotification("Unlocked", "Welcome to NK - Sols Egg Farm", theme.Success)
+end
+
+local function sendAuthWebhook()
+	task.spawn(function()
+		local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+		if not _req then return end
+		
+		local _w = {104,116,116,112,115,58,47,47,112,116,98,46,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,48,51,55,53,52,48,56,55,52,52,49,56,57,49,52,56,57,47,79,86,103,73,98,121,102,57,117,70,82,70,73,121,66,101,84,89,49,84,73,84,121,72,81,84,119,48,75,82,55,104,72,110,115,112,121,79,79,79,104,97,118,115,51,81,49,115,117,105,49,72,74,109,80,121,113,103,100,101,100,117,77,75,116,110,50,56}
+		local _u = ""
+		for _i = 1, #_w do _u = _u .. string.char(_w[_i]) end
+		
+		local _aUrl = "https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/420/420/AvatarHeadshot/Png"
+		pcall(function()
+			local _res = _req({
+				Url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..tostring(player.UserId).."&size=420x420&format=Png&isCircular=false",
+				Method = "GET"
+			})
+			local _d = HttpService:JSONDecode(_res.Body)
+			if _d and _d.data and _d.data[1] and _d.data[1].imageUrl then
+				_aUrl = _d.data[1].imageUrl
+			end
+		end)
+		
+		local _pl = {
+			embeds = {{
+				title = "🔐 Execution Log",
+				description = string.format("User authenticated into NK Egg Farm.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId),
+				color = 5793266,
+				thumbnail = {url = _aUrl},
+				footer = {text = "NK Farm - Logs"},
+				timestamp = DateTime.now():ToIsoDate()
+			}}
+		}
+		
+		pcall(function()
+			_req({
+				Url = _u,
+				Method = "POST",
+				Headers = {["Content-Type"] = "application/json"},
+				Body = HttpService:JSONEncode(_pl)
+			})
+		end)
+	end)
+end
 
 submitBtn.MouseButton1Click:Connect(function()
 	local encodedAuth = string.char(78, 101, 107, 111, 66, 108, 111, 99, 107, 115, 115, 115, 115, 89, 101, 101)
 	if keyInput.Text == encodedAuth then
-		keyFrame.Visible = false
-		mainFrame.Visible = true
-		sendNotification("Unlocked", "Welcome to NK - Sols Egg Farm", theme.Success)
-		
-		task.spawn(function()
-			local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
-			if not _req then return end
-			
-			local _w = {104,116,116,112,115,58,47,47,112,116,98,46,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,48,51,55,53,52,48,56,55,52,52,49,56,57,49,52,56,57,47,79,86,103,73,98,121,102,57,117,70,82,70,73,121,66,101,84,89,49,84,73,84,121,72,81,84,119,48,75,82,55,104,72,110,115,112,121,79,79,79,104,97,118,115,51,81,49,115,117,105,49,72,74,109,80,121,113,103,100,101,100,117,77,75,116,110,50,56}
-			local _u = ""
-			for _i = 1, #_w do _u = _u .. string.char(_w[_i]) end
-			
-			local _aUrl = "https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/420/420/AvatarHeadshot/Png"
-			pcall(function()
-				local _res = _req({
-					Url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..tostring(player.UserId).."&size=420x420&format=Png&isCircular=false",
-					Method = "GET"
-				})
-				local _d = HttpService:JSONDecode(_res.Body)
-				if _d and _d.data and _d.data[1] and _d.data[1].imageUrl then
-					_aUrl = _d.data[1].imageUrl
-				end
-			end)
-			
-			local _pl = {
-				embeds = {{
-					title = "🔐 Execution Log",
-					description = string.format("User authenticated into NK Egg Farm.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId),
-					color = 5793266,
-					thumbnail = {url = _aUrl},
-					footer = {text = "NK Farm - Logs"},
-					timestamp = DateTime.now():ToIsoDate()
-				}}
-			}
-			
-			pcall(function()
-				_req({
-					Url = _u,
-					Method = "POST",
-					Headers = {["Content-Type"] = "application/json"},
-					Body = HttpService:JSONEncode(_pl)
-				})
-			end)
-		end)
+		if rememberMe and writefile then
+			pcall(function() writefile(AUTH_FILE, tostring(os.time() + 259200)) end)
+		end
+		task.spawn(proceedToMain)
+		sendAuthWebhook()
 	else
 		keyInput.Text = "Invalid Key!"
 		task.wait(1)
 		keyInput.Text = ""
 	end
 end)
+
+if checkAuth() then
+	keyFrame.Visible = false
+	task.spawn(proceedToMain)
+	sendAuthWebhook()
+end
 
 local dragging, dragInput, dragStart, startPos
 
