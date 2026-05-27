@@ -18,7 +18,7 @@ player.CharacterAdded:Connect(function(char)
 	rootPart = char:WaitForChild("HumanoidRootPart")
 end)
 
-local targetParent = pcall(function() return gethui() end) and gethui() or (pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui"))
+local targetParent = (type(gethui) == "function" and gethui()) or (pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui"))
 local guiName = "FOREST-LOST-SECRET-ERROR-NEKO-FARM"
 
 if targetParent:FindFirstChild(guiName) then
@@ -1381,6 +1381,7 @@ local function handleChatMessage(text)
 	end
 	
 	local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
+	local function sendWebhook(embed, pings)
 	
 	if BIOMES[tag] and SETTINGS.WH_BIOMES then
 		local bInfo = BIOMES[tag]
@@ -1789,7 +1790,13 @@ local function collectEgg(egg)
 end
 
 local SimplePath
-pcall(function() SimplePath = loadstring(game:HttpGet("https://raw.githubusercontent.com/grayzcale/simplepath/main/src/SimplePath.lua"))() end)
+pcall(function() 
+	local ls = loadstring(game:HttpGet("https://raw.githubusercontent.com/grayzcale/simplepath/main/src/SimplePath.lua"))
+	if type(ls) == "function" then
+		SimplePath = ls()
+	end
+end)
+
 
 local pathAgent = nil
 local function initPathAgent()
