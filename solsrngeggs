@@ -1982,7 +1982,7 @@ local function getBestJumpPlatform(targetPos)
 		local bestDist = (myPos - targetPos).Magnitude
 		local parts = workspace:GetPartBoundsInRadius(myPos, 25)
 		for _, obj in ipairs(parts) do
-			if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency < 1 and obj.Name ~= "PathBlocker" and obj.Name ~= "WaterBlocks" then
+			if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency < 1 and obj.Name ~= "PathBlocker" then
 				local pDist = (obj.Position - myPos).Magnitude
 				if pDist > 4 then
 					local dy = obj.Position.Y - myPos.Y
@@ -2104,18 +2104,6 @@ local function fixMapGeometry()
 				b.CanCollide = true
 				b.Transparency = 1
 				b.Parent = obj
-			end
-		end
-	end
-	
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj:IsA("BasePart") and obj.Name == "WaterBlocks" then
-			if not obj:FindFirstChild("AvoidModifier") then
-				local mod = Instance.new("PathfindingModifier")
-				mod.Name = "AvoidModifier"
-				mod.Label = "WaterBlocks"
-				mod.PassThrough = false
-				mod.Parent = obj
 			end
 		end
 	end
