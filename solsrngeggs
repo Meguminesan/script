@@ -784,6 +784,7 @@ local SETTINGS = {
 	WH_BIOMES          = false,
 	WH_EGGS            = false,
 	WH_TIPS            = false,
+	WH_MERCHANT        = false,
 	WH_EGG_COUNT       = 25,
 	WH_PING_EVERYONE   = false,
 	WH_PING_HERE       = false,
@@ -1170,6 +1171,7 @@ local secWhEvents = createSection(pageWebhooks, "Event Triggers")
 createToggle(secWhEvents, "Send Biome Spawns", "WH_BIOMES")
 createToggle(secWhEvents, "Send Egg Spawned", "WH_EGGS")
 createToggle(secWhEvents, "Send Tips", "WH_TIPS")
+createToggle(secWhEvents, "Send Merchants", "WH_MERCHANT")
 createSlider(secWhEvents, "Send Every X Eggs Collected", 25, 1000, "WH_EGG_COUNT")
 
 local secWhPings = createSection(pageWebhooks, "Ping Settings")
@@ -1370,7 +1372,7 @@ local function handleChatMessage(text)
 			timestamp = DateTime.now():ToIsoDate()
 		}
 		sendWebhook(embed)
-	elseif tag == "Merchant" then
+	elseif tag == "Merchant" and SETTINGS.WH_MERCHANT then
 		local pings = {}
 		if string.find(string.lower(content), "jester") then
 			if SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
