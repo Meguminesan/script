@@ -1444,6 +1444,23 @@ local function handleChatMessage(text)
 			timestamp = DateTime.now():ToIsoDate()
 		}
 		sendWebhook(embed)
+	elseif tag == "Merchant" then
+		local pings = {}
+		if string.find(string.lower(content), "jester") then
+			if SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
+			if SETTINGS.WH_PING_HERE then table.insert(pings, "@here") end
+			for i = 1, 4 do
+				local uid = SETTINGS["PING_USER_"..i]
+				if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+			end
+		end
+		local embed = {
+			title = "🛒 Merchant Arrived",
+			description = content .. psLink,
+			color = 0x800080,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		sendWebhook(embed, pings)
 	end
 end
 
@@ -1546,7 +1563,33 @@ game:GetService("LogService").MessageOut:Connect(function(message)
 	end
 end)
 
-local EGG_PATTERNS = {"^point_egg_%d+$", "^random_potion_egg_%d+$"}
+local EGG_DATA = {
+	["egg_v2"]      = { name = "Basic Egg", priority = 3, rare = false },
+	["andromeda_egg"] = { name = "Andromeda Egg", priority = 1, rare = true },
+	["angelic_egg"]   = { name = "Angelic Egg", priority = 1, rare = true },
+	["blooming_egg"]  = { name = "Blooming Egg", priority = 1, rare = true },
+	["dreamer_egg"]   = { name = "Dreamer Egg", priority = 1, rare = true },
+	["forest_egg"]    = { name = "Forest Egg", priority = 1, rare = true },
+	["hatch_egg"]     = { name = "Hatch Egg", priority = 1, rare = true },
+	["royal_egg"]     = { name = "Royal Egg", priority = 1, rare = true },
+	["the_egg_of_the_sky"] = { name = "Egg of the Sky", priority = 1, rare = true }
+}
+
+local function getEggInfo(name)
+	if EGG_DATA[name] then return EGG_DATA[name] end
+	local pNum = string.match(name, "^point_egg_(%d+)$")
+	if pNum then
+		local romans = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"}
+		return { name = "Point Egg " .. (romans[tonumber(pNum)] or pNum), priority = 3, rare = false }
+	end
+	local rNum = string.match(name, "^random_potion_egg_(%d+)$")
+	if rNum then
+		local romans = {"I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"}
+		return { name = "Potion Egg " .. (romans[tonumber(rNum)] or rNum), priority = 2, rare = true }
+	end
+	return nil
+end
+
 local EXCLUDED_ZONES = {
 	{ center = Vector3.new(55.676, 102.85, -594.476), radius = 100 },
 	{ center = Vector3.new(-50.29, 95.5, -102.54), radius = 80 },
@@ -1554,10 +1597,7 @@ local EXCLUDED_ZONES = {
 }
 
 local function isEggName(name)
-	for _, pattern in ipairs(EGG_PATTERNS) do
-		if string.match(name, pattern) then return true end
-	end
-	return false
+	return getEggInfo(name) ~= nil
 end
 
 local function applyESP(obj)
@@ -1641,13 +1681,15 @@ local function findAllEggs()
 					end
 				end
 				if not inExcluded then
+					local eInfo = getEggInfo(obj.Name)
 					table.insert(eggs, {
 						instance = obj,
 						part = part,
 						position = part.Position,
 						prompt = obj:FindFirstChildWhichIsA("ProximityPrompt", true),
-						name = obj.Name,
-						priority = getEggPriority(obj.Name),
+						name = eInfo and eInfo.name or obj.Name,
+						priority = eInfo and eInfo.priority or 4,
+						rare = eInfo and eInfo.rare or false,
 					})
 				end
 			end
@@ -1718,6 +1760,32 @@ local function collectEgg(egg)
 	end
 
 	guiLog("Collected: " .. egg.name, theme.Success)
+	
+	if egg.rare and hasActiveWh then
+		local activeVip = ""
+		if type(SETTINGS.VIP_LINKS) == "table" then
+			for _, v in ipairs(SETTINGS.VIP_LINKS) do
+				if v.enabled and v.url ~= "" then activeVip = v.url break end
+			end
+		end
+		local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
+		local embed = {
+			title = "✨ Rare Egg Collected!",
+			description = "Successfully picked up **" .. egg.name .. "**!" .. psLink,
+			color = 0xFFD700,
+			timestamp = DateTime.now():ToIsoDate()
+		}
+		
+		local pings = {}
+		if SETTINGS.WH_PING_EVERYONE then table.insert(pings, "@everyone") end
+		if SETTINGS.WH_PING_HERE then table.insert(pings, "@here") end
+		for i = 1, 4 do
+			local uid = SETTINGS["PING_USER_"..i]
+			if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+		end
+		
+		sendWebhook(embed, pings)
+	end
 end
 
 local SimplePath
@@ -1728,7 +1796,7 @@ local function initPathAgent()
 	if pathAgent then pathAgent:Destroy() end
 	if not SimplePath or not character then return end
 	pathAgent = SimplePath.new(character, {
-		AgentRadius = 3, AgentHeight = 5.5, AgentCanJump = true, AgentCanClimb = true, AgentJumpHeight = 7.2, WaypointSpacing = 3, Costs = { Water = 100, Climb = 1 },
+		AgentRadius = 3, AgentHeight = 5.5, AgentCanJump = true, AgentCanClimb = true, AgentJumpHeight = 7.2, WaypointSpacing = 3, Costs = { Water = 100, Climb = 1, WaterBlocks = math.huge },
 	})
 end
 if character then initPathAgent() end
@@ -1748,7 +1816,7 @@ local function getBestJumpPlatform(targetPos)
 		local bestDist = (myPos - targetPos).Magnitude
 		local parts = workspace:GetPartBoundsInRadius(myPos, 25)
 		for _, obj in ipairs(parts) do
-			if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency < 1 and obj.Name ~= "PathBlocker" then
+			if obj:IsA("BasePart") and obj.CanCollide and obj.Transparency < 1 and obj.Name ~= "PathBlocker" and obj.Name ~= "WaterBlocks" then
 				local pDist = (obj.Position - myPos).Magnitude
 				if pDist > 4 then
 					local dy = obj.Position.Y - myPos.Y
@@ -1813,7 +1881,11 @@ local function moveToEgg(egg)
 	while STATE.running and not isCompleted do
 		if not egg.part or not egg.part.Parent then break end
 		if distanceTo(egg.part.Position) <= SETTINGS.PROMPT_DISTANCE then isCompleted = true break end
-		if errors > maxErrors then break end
+		if errors > maxErrors then
+			guiLog("Egg unreachable (WaterBlocks/Distance), skipping...", theme.Danger)
+			ignoredEggs[egg.instance] = true
+			break
+		end
 
 		local currentPos = rootPart.Position
 		if (currentPos - lastPos).Magnitude < 0.2 then
@@ -1854,21 +1926,35 @@ local function fixMapGeometry()
 	if mapFixed then return end
 	mapFixed = true
 	local leafygrass = workspace:FindFirstChild("Map") and workspace.Map:FindFirstChild("leafygrass")
-	if not leafygrass then return end
-	local extDown = 25
-	for _, obj in ipairs(leafygrass:GetDescendants()) do
-		if obj:IsA("BasePart") and obj.Name ~= "PathBlocker" then
-			local b = Instance.new("Part")
-			b.Name = "PathBlocker"
-			b.Size = Vector3.new(obj.Size.X, extDown, obj.Size.Z)
-			b.CFrame = obj.CFrame * CFrame.new(0, -(obj.Size.Y / 2 + extDown / 2), 0)
-			b.Anchored = true
-			b.CanCollide = true
-			b.Transparency = 1
-			b.Parent = obj
+	if leafygrass then
+		local extDown = 25
+		for _, obj in ipairs(leafygrass:GetDescendants()) do
+			if obj:IsA("BasePart") and obj.Name ~= "PathBlocker" then
+				local b = Instance.new("Part")
+				b.Name = "PathBlocker"
+				b.Size = Vector3.new(obj.Size.X, extDown, obj.Size.Z)
+				b.CFrame = obj.CFrame * CFrame.new(0, -(obj.Size.Y / 2 + extDown / 2), 0)
+				b.Anchored = true
+				b.CanCollide = true
+				b.Transparency = 1
+				b.Parent = obj
+			end
+		end
+	end
+	
+	for _, obj in ipairs(workspace:GetDescendants()) do
+		if obj:IsA("BasePart") and obj.Name == "WaterBlocks" then
+			if not obj:FindFirstChild("AvoidModifier") then
+				local mod = Instance.new("PathfindingModifier")
+				mod.Name = "AvoidModifier"
+				mod.Label = "WaterBlocks"
+				mod.PassThrough = false
+				mod.Parent = obj
+			end
 		end
 	end
 end
+
 
 local cachedAbyssalBtn = nil
 local cachedEqBtn = nil
