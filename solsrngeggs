@@ -1814,14 +1814,20 @@ task.spawn(function()
 		TextChatService.MessageReceived:Connect(function(msg)
 			if msg.Text then handleChatMessage(msg.Text) end
 		end)
-		local sysChannels = TextChatService:FindFirstChild("TextChannels")
-		if sysChannels then
-			for _, ch in ipairs(sysChannels:GetChildren()) do
+		for _, ch in ipairs(TextChatService:GetDescendants()) do
+			if ch:IsA("TextChannel") then
 				ch.MessageReceived:Connect(function(msg)
 					if msg.Text then handleChatMessage(msg.Text) end
 				end)
 			end
 		end
+		TextChatService.DescendantAdded:Connect(function(ch)
+			if ch:IsA("TextChannel") then
+				ch.MessageReceived:Connect(function(msg)
+					if msg.Text then handleChatMessage(msg.Text) end
+				end)
+			end
+		end)
 	else
 		local defaultChatEvents = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
 		if defaultChatEvents then
