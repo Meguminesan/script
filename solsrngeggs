@@ -1542,7 +1542,6 @@ local biomeOptions = {"Windy", "Snowy", "Rainy", "Sand Storm", "Hell", "Starfall
 local eggOptions = {"egg_v2", "andromeda_egg", "angelic_egg", "blooming_egg", "dreamer_egg", "forest_egg", "hatch_egg", "royal_egg", "the_egg_of_the_sky", "point_egg_1", "point_egg_2", "point_egg_3", "point_egg_4", "point_egg_5", "random_potion_egg_1", "random_potion_egg_2", "random_potion_egg_3"}
 createMultiSelect(secWhPings, "Ping on Biomes", biomeOptions, "PING_BIOMES_LIST")
 createMultiSelect(secWhPings, "Ping on Eggs", eggOptions, "PING_EGGS_LIST")
-createTextBox(secWhPings, "Ping User ID 1", "PING_USER_1", "123456789012345678")
 
 createTextBox(secWhPings, "Ping User ID 1", "PING_USER_1", "123456789012345678")
 createTextBox(secWhPings, "Ping User ID 2", "PING_USER_2", "")
