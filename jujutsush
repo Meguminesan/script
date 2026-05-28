@@ -729,17 +729,16 @@ end)
 local secSettings = createSection(pageSettings, "Hub Settings")
 createKeybind(secSettings, "Toggle UI Bind", state.UIBind, function(val) state.UIBind = val end)
 
-local vesselThread = nil
+local vesselDebounce = false
+local honoredDebounce = false
 
 local function handleMacroTrigger(inputObj)
 	if state.MacroVesselBind and (inputObj.KeyCode == state.MacroVesselBind or inputObj.UserInputType == state.MacroVesselBind) then
-		if vesselThread then
-			task.cancel(vesselThread)
-			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
-		end
+		if vesselDebounce then return end
+		vesselDebounce = true
 		
-		vesselThread = task.spawn(function()
-			local closestDist = 8
+		task.spawn(function()
+			local closestDist = 12
 			local closestPlr = nil
 			local char = player.Character
 			
@@ -757,31 +756,44 @@ local function handleMacroTrigger(inputObj)
 				
 				if closestPlr then
 					local targetHRP = closestPlr.Character.HumanoidRootPart
-					hrp.CFrame = CFrame.new(targetHRP.Position + targetHRP.CFrame.LookVector * -3, targetHRP.Position)
+					local backPos = targetHRP.Position - (targetHRP.CFrame.LookVector * 2.5)
+					hrp.CFrame = CFrame.new(backPos, targetHRP.Position)
+					task.wait(0.05)
 				end
 			end
 
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
 			task.wait(0.05)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
+			
 			task.wait(state.DelayVessel3)
+			
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
 			task.wait(0.05)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
 			
-			vesselThread = nil
+			task.wait(0.1)
+			vesselDebounce = false
 		end)
 	end
 
 	if state.MacroHonoredBind and (inputObj.KeyCode == state.MacroHonoredBind or inputObj.UserInputType == state.MacroHonoredBind) then
+		if honoredDebounce then return end
+		honoredDebounce = true
+		
 		task.spawn(function()
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
 			task.wait(0.05)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+			
 			task.wait(state.DelayHonoredRapid)
+			
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.R, false, game)
 			task.wait(0.05)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.R, false, game)
+			
+			task.wait(0.1)
+			honoredDebounce = false
 		end)
 	end
 end
