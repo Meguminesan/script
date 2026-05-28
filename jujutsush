@@ -739,7 +739,7 @@ local function handleMacroTrigger(inputObj)
 		end
 		
 		vesselThread = task.spawn(function()
-			local closestDist = 50
+			local closestDist = 8
 			local closestPlr = nil
 			local char = player.Character
 			
@@ -756,16 +756,17 @@ local function handleMacroTrigger(inputObj)
 				end
 				
 				if closestPlr then
-					hrp.CFrame = closestPlr.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+					local targetHRP = closestPlr.Character.HumanoidRootPart
+					hrp.CFrame = CFrame.new(targetHRP.Position + targetHRP.CFrame.LookVector * -3, targetHRP.Position)
 				end
 			end
 
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
-			task.wait(0.02)
+			task.wait(0.05)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
 			task.wait(state.DelayVessel3)
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
-			task.wait(0.02)
+			task.wait(0.05)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
 			
 			vesselThread = nil
