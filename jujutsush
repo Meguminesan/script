@@ -1,3 +1,4 @@
+-- Scripted by @neko.js
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -50,14 +51,10 @@ local state = {
 	UIBind = Enum.KeyCode.RightControl,
 	MacroVesselBind = nil,
 	MacroHonoredBind = nil,
+	AutoBlock = false,
 	AutoEvade = false,
-	AutoAwaken = false,
-	HitboxExpander = false,
-	HitboxSize = 10,
-	Aimbot = false,
-	WalkSpeed = 16,
-	JumpPower = 50,
-	InfJump = false,
+	AutoMelee = false,
+	CombatRadius = 15,
 	DelayVessel3 = 0.45,
 	DelayHonoredRapid = 0.3,
 	ESPEnabled = false,
@@ -677,10 +674,19 @@ local function createColorPicker(parent, text, defaultColor, callback)
 	rgbSlider(100, "B", Color3.fromRGB(50, 150, 255), bVal, function(v) bVal = v updateColor() end)
 end
 
+local pageCombat = createTab("Combat", "rbxassetid://13054160442")
 local pageMacros = createTab("Macros & Binds", "rbxassetid://13054170624")
 local pageVisuals = createTab("Visuals", "rbxassetid://14231649983")
 local pageWorld = createTab("World", "rbxassetid://14400115045")
 local pageSettings = createTab("Settings", "rbxassetid://13054157147")
+
+local secDefensive = createSection(pageCombat, "Defensive Tactics")
+createToggle(secDefensive, "Auto Block (F)", false, function(val) state.AutoBlock = val end)
+createToggle(secDefensive, "Auto Evade (Q)", false, function(val) state.AutoEvade = val end)
+createSlider(secDefensive, "Reaction Radius", 5, 30, 15, function(val) state.CombatRadius = val end)
+
+local secOffensive = createSection(pageCombat, "Offensive Tactics")
+createToggle(secOffensive, "Auto Melee (Aura)", false, function(val) state.AutoMelee = val end)
 
 local secVessel = createSection(pageMacros, "Vessel (Yuji)")
 createKeybind(secVessel, "Trigger Perfect Divergent Fist", nil, function(val) state.MacroVesselBind = val end)
@@ -878,6 +884,58 @@ end))
 
 table.insert(state.Connections, Players.PlayerRemoving:Connect(function(p)
 	removeESPObj(p)
+end))
+
+table.insert(state.Connections, RunService.Heartbeat:Connect(function()
+	if not (state.AutoBlock or state.AutoEvade or state.AutoMelee) then return end
+	local char = player.Character
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+	local hrp = char.HumanoidRootPart
+
+	local closestPlr = nil
+	local closestDist = state.CombatRadius
+
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+			local dist = (p.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+			if dist <= closestDist then
+				closestDist = dist
+				closestPlr = p
+			end
+		end
+	end
+
+	if closestPlr then
+		local isTargetAttacking = false
+		local tHum = closestPlr.Character.Humanoid
+		local tAnim = tHum:FindFirstChild("Animator")
+		
+		if tAnim then
+			for _, track in pairs(tAnim:GetPlayingAnimationTracks()) do
+				local n = string.lower(track.Animation.Name)
+				if string.find(n, "punch") or string.find(n, "attack") or string.find(n, "swing") or string.find(n, "strike") or string.find(n, "kick") or string.find(n, "combo") or string.find(n, "skill") then
+					isTargetAttacking = true
+					break
+				end
+			end
+		end
+
+		if isTargetAttacking then
+			if state.AutoBlock then
+				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.F, false, game)
+				task.wait(0.1)
+				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.F, false, game)
+			elseif state.AutoEvade then
+				VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
+				task.wait(0.1)
+				VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
+			end
+		else
+			if state.AutoMelee and closestDist <= 6 then
+				VirtualUser:ClickButton1(Vector2.new(0,0))
+			end
+		end
+	end
 end))
 
 table.insert(state.Connections, RunService.RenderStepped:Connect(function()
