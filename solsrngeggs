@@ -1015,6 +1015,8 @@ local SETTINGS = {
 	WH_TIPS            = false,
 	WH_MERCHANT        = false,
 	WH_EGG_COUNT       = 25,
+	WH_USERNAME        = "NK - Egg Farming",
+	WH_AVATAR          = "https://i.imgur.com/IqlIT6S.png",
 	WH_PING_EVERYONE   = false,
 	WH_PING_HERE       = false,
 	PING_BIOMES_LIST   = {},
@@ -1523,6 +1525,8 @@ createToggle(secConfig, "Egg ESP (Highlight)", "ESP_ENABLED")
 local secWhMain = createSection(pageWebhooks, "Main Settings")
 createListManager(secWhMain, "Webhooks", "https://discord.com/api/webhooks/...", "WEBHOOKS")
 createListManager(secWhMain, "Private Server Links", "https://www.roblox.com/games/...", "VIP_LINKS")
+createTextBox(secWhMain, "Webhook Username", "WH_USERNAME", "NK Farm Webhook")
+createTextBox(secWhMain, "Webhook Avatar URL", "WH_AVATAR", "https://i.imgur.com/71G0O4R.png")
 
 local secWhEvents = createSection(pageWebhooks, "Event Triggers")
 createToggle(secWhEvents, "Send Biome Spawns", "WH_BIOMES")
@@ -1603,8 +1607,8 @@ local function sendWebhook(embed, pings)
 	local data = {
 		content = contentStr ~= "" and contentStr or nil,
 		embeds = {embed},
-		username = "NK Farm Webhook",
-		avatar_url = "https://i.imgur.com/71G0O4R.png"
+		username = (SETTINGS.WH_USERNAME and SETTINGS.WH_USERNAME ~= "") and SETTINGS.WH_USERNAME or "NK - Egg Farming",
+		avatar_url = (SETTINGS.WH_AVATAR and SETTINGS.WH_AVATAR ~= "") and SETTINGS.WH_AVATAR or "https://i.imgur.com/IqlIT6S.png"
 	}
 	
 	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
