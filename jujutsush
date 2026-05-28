@@ -729,16 +729,46 @@ end)
 local secSettings = createSection(pageSettings, "Hub Settings")
 createKeybind(secSettings, "Toggle UI Bind", state.UIBind, function(val) state.UIBind = val end)
 
+local vesselThread = nil
+
 local function handleMacroTrigger(inputObj)
 	if state.MacroVesselBind and (inputObj.KeyCode == state.MacroVesselBind or inputObj.UserInputType == state.MacroVesselBind) then
-		task.spawn(function()
+		if vesselThread then
+			task.cancel(vesselThread)
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
+		end
+		
+		vesselThread = task.spawn(function()
+			local closestDist = 50
+			local closestPlr = nil
+			local char = player.Character
+			
+			if char and char:FindFirstChild("HumanoidRootPart") then
+				local hrp = char.HumanoidRootPart
+				for _, p in pairs(Players:GetPlayers()) do
+					if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+						local dist = (p.Character.HumanoidRootPart.Position - hrp.Position).Magnitude
+						if dist < closestDist then
+							closestDist = dist
+							closestPlr = p
+						end
+					end
+				end
+				
+				if closestPlr then
+					hrp.CFrame = closestPlr.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+				end
+			end
+
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
-			task.wait(0.05)
+			task.wait(0.02)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
 			task.wait(state.DelayVessel3)
 			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Three, false, game)
-			task.wait(0.05)
+			task.wait(0.02)
 			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Three, false, game)
+			
+			vesselThread = nil
 		end)
 	end
 
