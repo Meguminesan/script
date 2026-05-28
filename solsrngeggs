@@ -5,6 +5,8 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
+local scriptId = HttpService:GenerateGUID(false)
+getgenv().NK_Farm_InstanceId = scriptId
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local CoreGui = game:GetService("CoreGui")
 
@@ -35,7 +37,7 @@ screenGui.Parent = targetParent
 
 local vu = game:GetService("VirtualUser")
 player.Idled:Connect(function()
-	if getgenv().NK_Farm_Unloaded then return end
+	if getgenv().NK_Farm_Unloaded or getgenv().NK_Farm_InstanceId ~= scriptId then return end
 	vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
 	task.wait(1)
 	vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
@@ -235,7 +237,7 @@ applyStroke(copyLinkBtn, theme.Stroke, 1)
 
 copyLinkBtn.MouseButton1Click:Connect(function()
 	if setclipboard then
-		setclipboard("https://discord.gg/neko")
+		setclipboard("https://discord.gg/BVjqfqk6bs")
 		copyLinkBtn.Text = "Copied!"
 		task.wait(1.5)
 		copyLinkBtn.Text = "Get Key"
@@ -1015,8 +1017,8 @@ local SETTINGS = {
 	WH_EGG_COUNT       = 25,
 	WH_PING_EVERYONE   = false,
 	WH_PING_HERE       = false,
-	PING_BIOMES_LIST   = "",
-	PING_EGGS_LIST     = ""
+	PING_BIOMES_LIST   = {},
+	PING_EGGS_LIST     = {}
 }
 
 local CONFIG_FILE = "NK_SolsFarm_" .. tostring(player.UserId) .. ".json"
@@ -1368,6 +1370,134 @@ local function createToggle(parent, text, settingKey)
 	end)
 end
 
+local function createMultiSelect(parent, title, optionsList, settingKey)
+	if type(SETTINGS[settingKey]) ~= "table" then
+		local oldData = {}
+		if type(SETTINGS[settingKey]) == "string" then
+			for _, v in ipairs(string.split(SETTINGS[settingKey], ",")) do
+				local clean = string.match(v, "^%s*(.-)%s*$")
+				if clean ~= "" then oldData[clean] = true end
+			end
+		end
+		SETTINGS[settingKey] = oldData
+		saveConfig()
+	end
+
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, 0, 0, 42)
+	container.BackgroundColor3 = theme.Sidebar
+	container.ClipsDescendants = true
+	container.Parent = parent
+	applyCorner(container, 8)
+	applyStroke(container, theme.Stroke, 1)
+
+	local headerBtn = Instance.new("TextButton")
+	headerBtn.Size = UDim2.new(1, 0, 0, 42)
+	headerBtn.BackgroundTransparency = 1
+	headerBtn.Text = ""
+	headerBtn.Parent = container
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -30, 1, 0)
+	titleLbl.Position = UDim2.new(0, 10, 0, 0)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = title
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = headerBtn
+
+	local chevron = Instance.new("ImageLabel")
+	chevron.Size = UDim2.new(0, 20, 0, 20)
+	chevron.Position = UDim2.new(1, -30, 0.5, -10)
+	chevron.BackgroundTransparency = 1
+	chevron.Image = "rbxassetid://130746061687765"
+	chevron.ImageColor3 = theme.TextSecondary
+	chevron.Rotation = 0
+	chevron.Parent = headerBtn
+
+	local contentFrame = Instance.new("Frame")
+	contentFrame.Size = UDim2.new(1, 0, 0, 0)
+	contentFrame.Position = UDim2.new(0, 0, 0, 42)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.Parent = container
+
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Parent = contentFrame
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Padding = UDim.new(0, 5)
+
+	local contentPadding = Instance.new("UIPadding")
+	contentPadding.Parent = contentFrame
+	contentPadding.PaddingTop = UDim.new(0, 5)
+	contentPadding.PaddingLeft = UDim.new(0, 10)
+	contentPadding.PaddingRight = UDim.new(0, 10)
+	contentPadding.PaddingBottom = UDim.new(0, 10)
+
+	local isOpen = false
+	local targetHeight = 42
+
+	local function updateSize()
+		targetHeight = isOpen and (contentLayout.AbsoluteContentSize.Y + 57) or 42
+		TweenService:Create(container, TweenInfo.new(0.3), {Size = UDim2.new(1, 0, 0, targetHeight)}):Play()
+	end
+
+	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateSize)
+
+	headerBtn.MouseButton1Click:Connect(function()
+		isOpen = not isOpen
+		TweenService:Create(chevron, TweenInfo.new(0.3), {Rotation = isOpen and 180 or 0}):Play()
+		updateSize()
+	end)
+
+	for _, opt in ipairs(optionsList) do
+		local tContainer = Instance.new("Frame")
+		tContainer.Size = UDim2.new(1, 0, 0, 32)
+		tContainer.BackgroundColor3 = theme.ItemBG
+		tContainer.Parent = contentFrame
+		applyCorner(tContainer, 6)
+		applyStroke(tContainer, theme.Stroke, 1)
+
+		local tLbl = Instance.new("TextLabel")
+		tLbl.Size = UDim2.new(0.7, 0, 1, 0)
+		tLbl.Position = UDim2.new(0, 10, 0, 0)
+		tLbl.BackgroundTransparency = 1
+		tLbl.Text = opt
+		tLbl.TextColor3 = theme.TextPrimary
+		tLbl.Font = Enum.Font.Gotham
+		tLbl.TextSize = 12
+		tLbl.TextXAlignment = Enum.TextXAlignment.Left
+		tLbl.Parent = tContainer
+
+		local switchBg = Instance.new("TextButton")
+		switchBg.Size = UDim2.new(0, 36, 0, 20)
+		switchBg.Position = UDim2.new(1, -46, 0.5, -10)
+		local isToggled = SETTINGS[settingKey][opt] or false
+		switchBg.BackgroundColor3 = isToggled and theme.Success or theme.Background
+		switchBg.Text = ""
+		switchBg.Parent = tContainer
+		applyCorner(switchBg, 10)
+		applyStroke(switchBg, theme.Stroke, 1)
+
+		local knob = Instance.new("Frame")
+		knob.Size = UDim2.new(0, 14, 0, 14)
+		knob.Position = isToggled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+		knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		knob.BorderSizePixel = 0
+		knob.Parent = switchBg
+		applyCorner(knob, 7)
+
+		switchBg.MouseButton1Click:Connect(function()
+			isToggled = not isToggled
+			SETTINGS[settingKey][opt] = isToggled
+			saveConfig()
+			TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = isToggled and theme.Success or theme.Background}):Play()
+			TweenService:Create(knob, TweenInfo.new(0.2), {Position = isToggled and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}):Play()
+		end)
+	end
+end
+
 local pageDashboard = createTab("Dashboard", "rbxassetid://137577418512694")
 local pageSettings = createTab("Settings", "rbxassetid://91865132860715")
 local pageWebhooks = createTab("Webhooks", "rbxassetid://10052310118")
@@ -1404,8 +1534,12 @@ createSlider(secWhEvents, "Send Every X Eggs Collected", 25, 1000, "WH_EGG_COUNT
 local secWhPings = createSection(pageWebhooks, "Ping Settings")
 createToggle(secWhPings, "Ping @everyone on Rare Biome", "WH_PING_EVERYONE")
 createToggle(secWhPings, "Ping @here on Rare Biome", "WH_PING_HERE")
-createTextBox(secWhPings, "Ping on Biomes (comma separated)", "PING_BIOMES_LIST", "Hell, Null, Glitched")
-createTextBox(secWhPings, "Ping on Eggs (comma separated)", "PING_EGGS_LIST", "random_potion_egg_1")
+local biomeOptions = {"Windy", "Snowy", "Rainy", "Sand Storm", "Hell", "Starfall", "Heaven", "Corruption", "Null", "Dreamspace", "Glitched", "Cyberspace", "Singularity"}
+local eggOptions = {"egg_v2", "andromeda_egg", "angelic_egg", "blooming_egg", "dreamer_egg", "forest_egg", "hatch_egg", "royal_egg", "the_egg_of_the_sky", "point_egg_1", "point_egg_2", "point_egg_3", "point_egg_4", "point_egg_5", "random_potion_egg_1", "random_potion_egg_2", "random_potion_egg_3"}
+createMultiSelect(secWhPings, "Ping on Biomes", biomeOptions, "PING_BIOMES_LIST")
+createMultiSelect(secWhPings, "Ping on Eggs", eggOptions, "PING_EGGS_LIST")
+createTextBox(secWhPings, "Ping User ID 1", "PING_USER_1", "123456789012345678")
+
 createTextBox(secWhPings, "Ping User ID 1", "PING_USER_1", "123456789012345678")
 createTextBox(secWhPings, "Ping User ID 2", "PING_USER_2", "")
 createTextBox(secWhPings, "Ping User ID 3", "PING_USER_3", "")
@@ -1477,8 +1611,10 @@ local function sendWebhook(embed, pings)
 	if _req then
 		local payload = HttpService:JSONEncode(data)
 		task.spawn(function()
+			local sentUrls = {}
 			for _, wh in ipairs(SETTINGS.WEBHOOKS) do
-				if wh.enabled and wh.url and wh.url ~= "" then
+				if wh.enabled and wh.url and wh.url ~= "" and not sentUrls[wh.url] then
+					sentUrls[wh.url] = true
 					pcall(function()
 						_req({
 							Url = wh.url,
@@ -1511,12 +1647,12 @@ local BIOMES = {
 	["Singularity"] = { color = 0x000000, icon = "https://static.wikia.nocookie.net/sol-rng/images/f/f7/SingularityBiome.png", rare = true }
 }
 
-local recentMessages = {}
+getgenv().NK_Farm_SharedChatCache = getgenv().NK_Farm_SharedChatCache or {}
 local function handleChatMessage(text)
-	if getgenv().NK_Farm_Unloaded then return end
+	if getgenv().NK_Farm_Unloaded or getgenv().NK_Farm_InstanceId ~= scriptId then return end
 	local now = os.clock()
-	for k, v in pairs(recentMessages) do
-		if now - v > 10 then recentMessages[k] = nil end
+	for k, v in pairs(getgenv().NK_Farm_SharedChatCache) do
+		if now - v > 10 then getgenv().NK_Farm_SharedChatCache[k] = nil end
 	end
 
 	local plainText = string.gsub(text, "<[^>]+>", "")
@@ -1524,8 +1660,8 @@ local function handleChatMessage(text)
 	if not tag then return end
 	
 	local msgHash = tag .. content
-	if recentMessages[msgHash] then return end
-	recentMessages[msgHash] = now
+	if getgenv().NK_Farm_SharedChatCache[msgHash] then return end
+	getgenv().NK_Farm_SharedChatCache[msgHash] = now
 	
 	local activeVip = ""
 	if type(SETTINGS.VIP_LINKS) == "table" then
@@ -1542,11 +1678,11 @@ local function handleChatMessage(text)
 		local bInfo = BIOMES[tag]
 		local pings = {}
 		local isPinged = false
-		local pingBiomes = string.split(string.lower(SETTINGS.PING_BIOMES_LIST or ""), ",")
-		for _, pb in ipairs(pingBiomes) do
-			local cleanPb = string.match(pb, "^%s*(.-)%s*$")
-			if cleanPb ~= "" and string.find(string.lower(tag), cleanPb, 1, true) then
-				isPinged = true break
+		if type(SETTINGS.PING_BIOMES_LIST) == "table" then
+			for k, v in pairs(SETTINGS.PING_BIOMES_LIST) do
+				if v and string.find(string.lower(tag), string.lower(k), 1, true) then
+					isPinged = true break
+				end
 			end
 		end
 		
@@ -1570,11 +1706,11 @@ local function handleChatMessage(text)
 	elseif tag == "Egg Spawned" and SETTINGS.WH_EGGS then
 		local pings = {}
 		local isPinged = false
-		local pingEggs = string.split(string.lower(SETTINGS.PING_EGGS_LIST or ""), ",")
-		for _, pe in ipairs(pingEggs) do
-			local cleanPe = string.match(pe, "^%s*(.-)%s*$")
-			if cleanPe ~= "" and string.find(string.lower(content), cleanPe, 1, true) then
-				isPinged = true break
+		if type(SETTINGS.PING_EGGS_LIST) == "table" then
+			for k, v in pairs(SETTINGS.PING_EGGS_LIST) do
+				if v and string.find(string.lower(content), string.lower(k), 1, true) then
+					isPinged = true break
+				end
 			end
 		end
 		
@@ -1619,6 +1755,7 @@ local function handleChatMessage(text)
 		sendWebhook(embed, pings)
 	end
 end
+
 
 task.spawn(function()
 	local TextChatService = game:GetService("TextChatService")
@@ -1714,7 +1851,7 @@ local STATE = {
 local ignoredEggs = setmetatable({}, {__mode = "k"})
 
 game:GetService("LogService").MessageOut:Connect(function(message)
-	if getgenv().NK_Farm_Unloaded then return end
+	if getgenv().NK_Farm_Unloaded or getgenv().NK_Farm_InstanceId ~= scriptId then return end
 	if message:match("Invalid egg") and STATE.currentEggInstance then
 		ignoredEggs[STATE.currentEggInstance] = true
 	end
@@ -1787,7 +1924,7 @@ for _, obj in ipairs(workspace:GetDescendants()) do
 end
 
 workspace.DescendantAdded:Connect(function(obj)
-	if not getgenv().NK_Farm_Unloaded then checkAndCacheEgg(obj) end
+	if not getgenv().NK_Farm_Unloaded and getgenv().NK_Farm_InstanceId == scriptId then checkAndCacheEgg(obj) end
 end)
 workspace.DescendantRemoving:Connect(function(obj)
 	eggCache[obj] = nil
@@ -1795,7 +1932,7 @@ end)
 
 task.spawn(function()
 	while task.wait(1) do
-		if getgenv().NK_Farm_Unloaded then
+		if getgenv().NK_Farm_Unloaded or getgenv().NK_Farm_InstanceId ~= scriptId then
 			for obj in pairs(eggCache) do
 				local hl = obj:FindFirstChild("EggESP")
 				if hl then hl:Destroy() end
@@ -2175,7 +2312,7 @@ local function mainLoop()
 	fixMapGeometry()
 	guiLog("Farming started!", theme.Success)
 	while STATE.running do
-		if getgenv().NK_Farm_Unloaded then STATE.running = false break end
+		if getgenv().NK_Farm_Unloaded or getgenv().NK_Farm_InstanceId ~= scriptId then STATE.running = false break end
 		if SETTINGS.AUTO_EQUIP_ABYSSAL and rootPart and not rootPart:FindFirstChild("FishSpin") then
 			autoEquipAbyssal() task.wait(0.5)
 		end
