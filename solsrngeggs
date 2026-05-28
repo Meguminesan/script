@@ -1014,6 +1014,9 @@ local SETTINGS = {
 	WH_EGGS            = false,
 	WH_TIPS            = false,
 	WH_MERCHANT        = false,
+	WH_AURAS           = false,
+	WH_AURA_MIN_CHANCE = "99999",
+	WH_AURA_PING_MIN_CHANCE = "99999999",
 	WH_EGG_COUNT       = 25,
 	WH_USERNAME        = "NK - Egg Farming",
 	WH_AVATAR          = "https://i.imgur.com/IqlIT6S.png",
@@ -1533,6 +1536,9 @@ createToggle(secWhEvents, "Send Biome Spawns", "WH_BIOMES")
 createToggle(secWhEvents, "Send Egg Spawned", "WH_EGGS")
 createToggle(secWhEvents, "Send Tips", "WH_TIPS")
 createToggle(secWhEvents, "Send Merchants", "WH_MERCHANT")
+createToggle(secWhEvents, "Send Auras", "WH_AURAS")
+createTextBox(secWhEvents, "Min Chance to Send Aura", "WH_AURA_MIN_CHANCE", "1000000")
+createTextBox(secWhPings, "Min Chance to Ping for Aura", "WH_AURA_PING_MIN_CHANCE", "10000000")
 createSlider(secWhEvents, "Send Every X Eggs Collected", 25, 1000, "WH_EGG_COUNT")
 
 local secWhPings = createSection(pageWebhooks, "Ping Settings")
@@ -1547,6 +1553,7 @@ createTextBox(secWhPings, "Ping User ID 1", "PING_USER_1", "123456789012345678")
 createTextBox(secWhPings, "Ping User ID 2", "PING_USER_2", "")
 createTextBox(secWhPings, "Ping User ID 3", "PING_USER_3", "")
 createTextBox(secWhPings, "Ping User ID 4", "PING_USER_4", "")
+
 
 local function addUpdate(version, date, changes)
 	local f = Instance.new("Frame")
@@ -1659,6 +1666,47 @@ local function handleChatMessage(text)
 	end
 
 	local plainText = string.gsub(text, "<[^>]+>", "")
+	
+	local dName, uName, auraName, chanceStr = string.match(plainText, "^%s*(.-)%(@(.-)%) HAS FOUND (.-), CHANCE OF 1 IN (.-)!")
+	if dName and uName and auraName and chanceStr and SETTINGS.WH_AURAS then
+		if uName == player.Name then
+			local msgHash = "AURA" .. uName .. auraName .. chanceStr
+			if getgenv().NK_Farm_SharedChatCache[msgHash] then return end
+			getgenv().NK_Farm_SharedChatCache[msgHash] = now
+			
+			local chanceNum = tonumber((string.gsub(chanceStr, ",", ""))) or 0
+			local minSend = tonumber((string.gsub(tostring(SETTINGS.WH_AURA_MIN_CHANCE), ",", ""))) or 0
+			local minPing = tonumber((string.gsub(tostring(SETTINGS.WH_AURA_PING_MIN_CHANCE), ",", ""))) or 0
+			
+			if chanceNum >= minSend then
+				local pings = {}
+				if chanceNum >= minPing then
+					for i = 1, 4 do
+						local uid = SETTINGS["PING_USER_"..i]
+						if uid and uid ~= "" then table.insert(pings, "<@"..uid..">") end
+					end
+				end
+				
+				local activeVip = ""
+				if type(SETTINGS.VIP_LINKS) == "table" then
+					for _, v in ipairs(SETTINGS.VIP_LINKS) do
+						if v.enabled and v.url ~= "" then activeVip = v.url break end
+					end
+				end
+				
+				local psLink = (activeVip ~= "") and ("\n\n**Private Server:** [Click to Join]("..activeVip..")") or ""
+				local embed = {
+					title = "🌟 Aura Found!",
+					description = "**" .. dName .. "** (@" .. uName .. ") HAS FOUND **" .. auraName .. "**, CHANCE OF 1 IN **" .. chanceStr .. "**!" .. psLink,
+					color = 0xAA00FF,
+					timestamp = DateTime.now():ToIsoDate()
+				}
+				sendWebhook(embed, pings)
+			end
+		end
+		return
+	end
+	
 	local tag, content = string.match(plainText, "^%[%s*(.-)%s*%]:%s*(.*)")
 	if not tag then return end
 	
