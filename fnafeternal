@@ -36,7 +36,7 @@ player.CharacterAdded:Connect(function(char)
 end)
 
 local targetParent = (type(gethui) == "function" and gethui()) or (pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui"))
-local guiName = "NK-CUSTOM-HUB-V2"
+local guiName = "NK-FNAF-ETERNAL-HUB-"
 
 if targetParent:FindFirstChild(guiName) then
 	targetParent:FindFirstChild(guiName):Destroy()
@@ -316,7 +316,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0, 200, 0, 20)
 titleText.Position = UDim2.new(0, 45, 0, 15)
 titleText.BackgroundTransparency = 1
-titleText.Text = "NK - Utility Hub V2"
+titleText.Text = "NK - FNAF: Eternal Nights"
 titleText.TextColor3 = theme.TextPrimary
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 16
