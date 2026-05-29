@@ -958,7 +958,10 @@ local function tpToMe(itemName)
 end
 
 createButton(secTeleportItems, "Teleport Fuse to Me", theme.Accent, function() tpToMe("Fuse") end)
+createButton(secTeleportItems, "Teleport Megaphone to Me", theme.Accent, function() tpToMe("Megaphone") end)
+createButton(secTeleportItems, "Teleport Screwdriver to Me", theme.Accent, function() tpToMe("Phillips screwdriver") end)
 createButton(secTeleportItems, "Teleport Battery to Me", theme.Accent, function() tpToMe("Battery") end)
+createButton(secTeleportItems, "Teleport Flashlight to Me", theme.Accent, function() tpToMe("Old Flashlight") end)
 
 local function hexToColor3(hex)
 	hex = hex:gsub("#","")
