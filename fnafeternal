@@ -1025,7 +1025,7 @@ task.spawn(function()
 		if SETTINGS.ESP_MONSTERS or SETTINGS.ESP_ITEMS then
 			for i, obj in ipairs(descendants) do
 				if obj:IsA("Model") or obj:IsA("BasePart") then
-					local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica" or obj.Name == "Marionette" obj.Name == "Chica's Cake" 
+					local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica" or obj.Name == "Marionette" or obj.Name == "Chica's Cake" 
 					local isItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
 					
 					if SETTINGS.ESP_MONSTERS and isMonster then
