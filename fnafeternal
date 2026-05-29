@@ -1042,7 +1042,7 @@ task.spawn(function()
 			if SETTINGS.ESP_MONSTERS or SETTINGS.ESP_ITEMS or SETTINGS.ESP_PHILLIPS or SETTINGS.ESP_FUSE or SETTINGS.ESP_PLIERS or SETTINGS.ESP_BATTERY or SETTINGS.ESP_FLASHLIGHT or SETTINGS.ESP_MEGAPHONE then
 				for i, obj in ipairs(descendants) do
 					if obj:IsA("Model") or obj:IsA("BasePart") then
-						local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica" or obj.Name == "Puppet" or obj.Name == "Cake"
+						local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica" or obj.Name == "Puppet" or obj.Name == "Cupcake"
 						local isItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
 						
 						local isPhillips = SETTINGS.ESP_PHILLIPS and obj.Name == "Phillips screwdriver"
