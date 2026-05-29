@@ -1,4 +1,4 @@
--- Scripted by @neko.js (Custom UI Template)
+-- Scripted by @neko.js
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -11,14 +11,32 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local rootPart = character:WaitForChild("HumanoidRootPart")
 
+local charParts = {}
+local function updateCharParts(char)
+	table.clear(charParts)
+	for _, p in ipairs(char:GetDescendants()) do
+		if p:IsA("BasePart") then
+			table.insert(charParts, p)
+		end
+	end
+	char.DescendantAdded:Connect(function(p)
+		if p:IsA("BasePart") then
+			table.insert(charParts, p)
+		end
+	end)
+end
+
+updateCharParts(character)
+
 player.CharacterAdded:Connect(function(char)
 	character = char
 	humanoid = char:WaitForChild("Humanoid")
 	rootPart = char:WaitForChild("HumanoidRootPart")
+	updateCharParts(char)
 end)
 
 local targetParent = (type(gethui) == "function" and gethui()) or (pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui"))
-local guiName = "NK-CUSTOM-HUB"
+local guiName = "NK-CUSTOM-HUB-V2"
 
 if targetParent:FindFirstChild(guiName) then
 	targetParent:FindFirstChild(guiName):Destroy()
@@ -31,22 +49,21 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 if syn and syn.protect_gui then pcall(syn.protect_gui, screenGui) end
 screenGui.Parent = targetParent
 
--- ТЕМА И ЦВЕТА ИЗ ОРИГИНАЛА
 local theme = {
-	Background = Color3.fromRGB(43, 45, 49),
-	Sidebar = Color3.fromRGB(30, 31, 34),
-	ItemBG = Color3.fromRGB(23, 24, 26),
-	ItemHover = Color3.fromRGB(64, 66, 73),
-	TabActive = Color3.fromRGB(64, 66, 73),
-	TabInactive = Color3.fromRGB(30, 31, 34),
-	TextPrimary = Color3.fromRGB(219, 222, 225),
-	TextSecondary = Color3.fromRGB(148, 155, 164),
+	Background = Color3.fromRGB(18, 18, 22),
+	Sidebar = Color3.fromRGB(24, 24, 28),
+	ItemBG = Color3.fromRGB(32, 32, 38),
+	ItemHover = Color3.fromRGB(45, 45, 52),
+	TabActive = Color3.fromRGB(88, 101, 242),
+	TabInactive = Color3.fromRGB(24, 24, 28),
+	TextPrimary = Color3.fromRGB(240, 240, 245),
+	TextSecondary = Color3.fromRGB(160, 160, 170),
 	Accent = Color3.fromRGB(88, 101, 242),
-	Success = Color3.fromRGB(35, 165, 89),
-	Danger = Color3.fromRGB(218, 55, 60),
-	Stroke = Color3.fromRGB(65, 68, 74),
-	Topbar = Color3.fromRGB(23, 24, 26),
-	Gold = Color3.fromRGB(255, 201, 37)
+	Success = Color3.fromRGB(46, 204, 113),
+	Danger = Color3.fromRGB(231, 76, 60),
+	Stroke = Color3.fromRGB(45, 45, 50),
+	Topbar = Color3.fromRGB(20, 20, 24),
+	Gold = Color3.fromRGB(241, 196, 15)
 }
 
 local function applyCorner(obj, radius)
@@ -119,39 +136,99 @@ local function sendNotification(title, desc, color)
 	end)
 end
 
--- НАСТРОЙКИ
 local SETTINGS = {
 	ESP_PLAYERS = false,
 	ESP_CHAMS = false,
 	ESP_CHAMS_COLOR = "FF0000",
 	ESP_NAME_COLOR = "FFFFFF",
 	ESP_MONSTERS = false,
+	ESP_ITEMS = false,
+	ITEM_SEARCH = "",
 	
 	FULLBRIGHT = false,
+	X_RAY = false,
+	
 	DASH_ENABLED = false,
 	DASH_SPEED = 50,
 	NOCLIP = false,
 	INF_JUMP = false,
-	X_RAY = false,
-	
-	ITEM_SEARCH = "",
-	ESP_ITEMS = false,
 }
+
+local VALID_KEY = "NK-2026"
+local isKeyValid = false
+
+local keyFrame = Instance.new("Frame")
+keyFrame.Name = "KeyFrame"
+keyFrame.Size = UDim2.new(0, 350, 0, 200)
+keyFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
+keyFrame.BackgroundColor3 = theme.Background
+keyFrame.Parent = screenGui
+applyCorner(keyFrame, 12)
+applyStroke(keyFrame, theme.Stroke, 1)
+
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1, 0, 0, 40)
+keyTitle.Position = UDim2.new(0, 0, 0, 10)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "AUTHENTICATION REQUIRED"
+keyTitle.TextColor3 = theme.TextPrimary
+keyTitle.Font = Enum.Font.GothamBold
+keyTitle.TextSize = 18
+keyTitle.Parent = keyFrame
+
+local keyInput = Instance.new("TextBox")
+keyInput.Size = UDim2.new(0.8, 0, 0, 40)
+keyInput.Position = UDim2.new(0.1, 0, 0.5, -20)
+keyInput.BackgroundColor3 = theme.ItemBG
+keyInput.TextColor3 = theme.TextPrimary
+keyInput.Font = Enum.Font.Gotham
+keyInput.TextSize = 14
+keyInput.PlaceholderText = "Enter Access Key..."
+keyInput.Text = ""
+keyInput.Parent = keyFrame
+applyCorner(keyInput, 6)
+applyStroke(keyInput, theme.Stroke, 1)
+
+local keyBtn = Instance.new("TextButton")
+keyBtn.Size = UDim2.new(0.8, 0, 0, 40)
+keyBtn.Position = UDim2.new(0.1, 0, 1, -50)
+keyBtn.BackgroundColor3 = theme.Accent
+keyBtn.Text = "SUBMIT"
+keyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyBtn.Font = Enum.Font.GothamBold
+keyBtn.TextSize = 14
+keyBtn.Parent = keyFrame
+applyCorner(keyBtn, 6)
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 650, 0, 450)
-mainFrame.Position = UDim2.new(0.5, -325, 0.5, -225)
+mainFrame.Size = UDim2.new(0, 700, 0, 480)
+mainFrame.Position = UDim2.new(0.5, -350, 0.5, -240)
 mainFrame.BackgroundColor3 = theme.Background
-mainFrame.BorderSizePixel = 0
+mainFrame.Visible = false
 mainFrame.Active = true
 mainFrame.Parent = screenGui
 applyCorner(mainFrame, 12)
 applyStroke(mainFrame, theme.Stroke, 1)
 
-local mainScale = Instance.new("UIScale")
-mainScale.Parent = mainFrame
-mainScale.Scale = 1
+keyBtn.MouseButton1Click:Connect(function()
+	if keyInput.Text == VALID_KEY then
+		isKeyValid = true
+		sendNotification("Access Granted", "Welcome back, " .. player.DisplayName, theme.Success)
+		local twOut = TweenService:Create(keyFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+		twOut:Play()
+		twOut.Completed:Wait()
+		keyFrame:Destroy()
+		mainFrame.Visible = true
+		local scale = Instance.new("UIScale")
+		scale.Scale = 0
+		scale.Parent = mainFrame
+		TweenService:Create(scale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	else
+		sendNotification("Access Denied", "Invalid access key provided.", theme.Danger)
+		keyInput.Text = ""
+	end
+end)
 
 local floatIconBtn = Instance.new("ImageButton")
 floatIconBtn.Size = UDim2.new(0, 50, 0, 50)
@@ -177,8 +254,9 @@ floatIconBtn.MouseButton1Click:Connect(function()
 	twOut.Completed:Wait()
 	floatIconBtn.Visible = false
 	mainFrame.Visible = true
-	mainScale.Scale = 0
-	TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+	local scale = mainFrame:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", mainFrame)
+	scale.Scale = 0
+	TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
 end)
 
 local dragging, dragInput, dragStart, startPos
@@ -238,7 +316,7 @@ local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0, 200, 0, 20)
 titleText.Position = UDim2.new(0, 45, 0, 15)
 titleText.BackgroundTransparency = 1
-titleText.Text = "NK - Utility Hub"
+titleText.Text = "NK - Utility Hub V2"
 titleText.TextColor3 = theme.TextPrimary
 titleText.Font = Enum.Font.GothamBold
 titleText.TextSize = 16
@@ -272,7 +350,8 @@ minimizeBtn.Parent = topbar
 minimizeBtn.MouseEnter:Connect(function() TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play() end)
 minimizeBtn.MouseLeave:Connect(function() TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play() end)
 minimizeBtn.MouseButton1Click:Connect(function()
-	local twIn = TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
+	local scale = mainFrame:FindFirstChildOfClass("UIScale")
+	local twIn = TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
 	twIn:Play()
 	twIn.Completed:Wait()
 	mainFrame.Visible = false
@@ -764,31 +843,58 @@ local function createButton(parent, text, color, callback)
 	return btn
 end
 
--- ==================== СОЗДАНИЕ МЕНЮ ====================
-
 local pageESP = createTab("ESP", "rbxassetid://137577418512694")
-local pageUtils = createTab("Utils", "rbxassetid://91865132860715")
-local pageItems = createTab("Items", "rbxassetid://10052310118")
+local pageLocalPlayer = createTab("LocalPlayer", "rbxassetid://11654162088")
+local pageEnvironment = createTab("Environment", "rbxassetid://11306359560")
+local pageTeleports = createTab("Teleports", "rbxassetid://10052310118")
 
--- Вкладка ESP
 local secPlayerESP = createSection(pageESP, "Player ESP")
 createToggle(secPlayerESP, "Enable Player ESP", "ESP_PLAYERS")
 createToggle(secPlayerESP, "Enable Player Chams", "ESP_CHAMS")
 createTextBox(secPlayerESP, "Chams Color (Hex)", "ESP_CHAMS_COLOR", "FF0000")
 createTextBox(secPlayerESP, "Name Color (Hex)", "ESP_NAME_COLOR", "FFFFFF")
 
-local secMonsterESP = createSection(pageESP, "Monster ESP")
-createToggle(secMonsterESP, "Enable Monster ESP", "ESP_MONSTERS")
+local secWorldESP = createSection(pageESP, "World ESP")
+createToggle(secWorldESP, "Enable Monster ESP", "ESP_MONSTERS")
+createToggle(secWorldESP, "Enable Item ESP", "ESP_ITEMS")
+createTextBox(secWorldESP, "Item Search Name", "ITEM_SEARCH", "Enter exact item name...")
 
--- Вкладка Utils
+local secMovement = createSection(pageLocalPlayer, "Movement Options")
+createToggle(secMovement, "Dash on Q", "DASH_ENABLED")
+createSlider(secMovement, "Dash Speed", 10, 200, "DASH_SPEED")
+createToggle(secMovement, "Noclip", "NOCLIP")
+createToggle(secMovement, "Infinite Jump", "INF_JUMP")
+
 local originalTransparencies = {}
-local secGeneralUtils = createSection(pageUtils, "General Utils")
-createToggle(secGeneralUtils, "Fullbright", "FULLBRIGHT")
-createToggle(secGeneralUtils, "Dash on Q", "DASH_ENABLED")
-createSlider(secGeneralUtils, "Dash Speed", 10, 200, "DASH_SPEED")
-createToggle(secGeneralUtils, "Noclip", "NOCLIP")
-createToggle(secGeneralUtils, "Infinite Jump", "INF_JUMP")
-createToggle(secGeneralUtils, "X-Ray", "X_RAY", function(state)
+local defaultLighting = {
+	Ambient = Lighting.Ambient,
+	Brightness = Lighting.Brightness,
+	ClockTime = Lighting.ClockTime,
+	ColorShift_Bottom = Lighting.ColorShift_Bottom,
+	ColorShift_Top = Lighting.ColorShift_Top,
+	GlobalShadows = Lighting.GlobalShadows
+}
+
+local secVisuals = createSection(pageEnvironment, "World Visuals")
+createToggle(secVisuals, "Fullbright", "FULLBRIGHT", function(state)
+	if state then
+		Lighting.Ambient = Color3.new(1, 1, 1)
+		Lighting.ColorShift_Bottom = Color3.new(1, 1, 1)
+		Lighting.ColorShift_Top = Color3.new(1, 1, 1)
+		Lighting.Brightness = 2
+		Lighting.ClockTime = 12
+		Lighting.GlobalShadows = false
+	else
+		Lighting.Ambient = defaultLighting.Ambient
+		Lighting.ColorShift_Bottom = defaultLighting.ColorShift_Bottom
+		Lighting.ColorShift_Top = defaultLighting.ColorShift_Top
+		Lighting.Brightness = defaultLighting.Brightness
+		Lighting.ClockTime = defaultLighting.ClockTime
+		Lighting.GlobalShadows = defaultLighting.GlobalShadows
+	end
+end)
+
+createToggle(secVisuals, "X-Ray", "X_RAY", function(state)
 	if state then
 		for _, part in ipairs(workspace:GetDescendants()) do
 			if part:IsA("BasePart") and not part.Parent:FindFirstChild("Humanoid") then
@@ -808,12 +914,7 @@ createToggle(secGeneralUtils, "X-Ray", "X_RAY", function(state)
 	end
 end)
 
--- Вкладка Items
-local secItemSearch = createSection(pageItems, "Item Search ESP")
-createTextBox(secItemSearch, "Item Name (e.g., Flashlight)", "ITEM_SEARCH", "Enter exact item name...")
-createToggle(secItemSearch, "Enable Item Highlight", "ESP_ITEMS")
-
-local secTeleports = createSection(pageItems, "Teleports")
+local secTeleportItems = createSection(pageTeleports, "Item Bringer")
 
 local function tpToMe(itemName)
 	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -836,11 +937,8 @@ local function tpToMe(itemName)
 	sendNotification("Teleport", "Teleported " .. foundCount .. " " .. itemName .. "(s) to you.", theme.Success)
 end
 
-createButton(secTeleports, "Teleport Fuse to Me", theme.Accent, function() tpToMe("Fuse") end)
-createButton(secTeleports, "Teleport Battery to Me", theme.Accent, function() tpToMe("Battery") end)
-
-
--- ==================== ЛОГИКА И ФУНКЦИИ ====================
+createButton(secTeleportItems, "Teleport Fuse to Me", theme.Accent, function() tpToMe("Fuse") end)
+createButton(secTeleportItems, "Teleport Battery to Me", theme.Accent, function() tpToMe("Battery") end)
 
 local function hexToColor3(hex)
 	hex = hex:gsub("#","")
@@ -891,84 +989,68 @@ local function applyESPToObj(obj, color, useChams, nameText, nameColor)
 end
 
 local function removeESP(obj)
-	if obj:FindFirstChild("NK_Highlight") then obj.NK_Highlight:Destroy() end
+	local hl = obj:FindFirstChild("NK_Highlight")
+	if hl then hl:Destroy() end
 	for _, v in ipairs(obj:GetDescendants()) do
 		if v.Name == "NK_NameTag" then v:Destroy() end
 	end
 end
 
--- Основной цикл для постоянных обновлений
-RunService.RenderStepped:Connect(function()
-	-- Полное освещение
-	if SETTINGS.FULLBRIGHT then
-		Lighting.Ambient = Color3.new(1, 1, 1)
-		Lighting.ColorShift_Bottom = Color3.new(1, 1, 1)
-		Lighting.ColorShift_Top = Color3.new(1, 1, 1)
-		Lighting.Brightness = 2
-		Lighting.ClockTime = 12
-		Lighting.GlobalShadows = false
-	end
-	
-	-- Noclip
-	if SETTINGS.NOCLIP and player.Character then
-		for _, part in ipairs(player.Character:GetDescendants()) do
-			if part:IsA("BasePart") and part.CanCollide then
-				part.CanCollide = false
-			end
-		end
-	end
-	
-	-- Обновление ESP
-	local chamsColor = hexToColor3(SETTINGS.ESP_CHAMS_COLOR)
-	local nameColor = hexToColor3(SETTINGS.ESP_NAME_COLOR)
-	
-	-- Player ESP
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= player and p.Character then
-			if SETTINGS.ESP_PLAYERS then
-				applyESPToObj(p.Character, chamsColor, SETTINGS.ESP_CHAMS, p.Name, nameColor)
-			else
-				removeESP(p.Character)
-			end
-		end
-	end
-	
-	-- Monster & Item ESP (Сканируем Workspace)
-	if SETTINGS.ESP_MONSTERS or SETTINGS.ESP_ITEMS then
-		for _, obj in ipairs(workspace:GetDescendants()) do
-			if obj:IsA("Model") or obj:IsA("BasePart") then
-				-- Monsters
-				local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy"
-				-- Item
-				local isItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
-				
-				if SETTINGS.ESP_MONSTERS and isMonster then
-					applyESPToObj(obj, Color3.new(1,0,0), true, obj.Name, Color3.new(1,0,0))
-				elseif SETTINGS.ESP_ITEMS and isItem then
-					applyESPToObj(obj, Color3.new(0,1,0), true, obj.Name, Color3.new(0,1,0))
+task.spawn(function()
+	while task.wait(1.5) do
+		if not isKeyValid then continue end
+		
+		local chamsColor = hexToColor3(SETTINGS.ESP_CHAMS_COLOR)
+		local nameColor = hexToColor3(SETTINGS.ESP_NAME_COLOR)
+		
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p ~= player and p.Character then
+				if SETTINGS.ESP_PLAYERS then
+					applyESPToObj(p.Character, chamsColor, SETTINGS.ESP_CHAMS, p.Name, nameColor)
 				else
-					-- Если объект не монстр и не искомый предмет (или ESP выключено)
-					if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
-						removeESP(obj)
-					end
+					removeESP(p.Character)
 				end
 			end
 		end
-	else
-		-- Очистка если всё выключено
-		for _, obj in ipairs(workspace:GetDescendants()) do
-			if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
-				removeESP(obj)
+		
+		if SETTINGS.ESP_MONSTERS or SETTINGS.ESP_ITEMS then
+			for _, obj in ipairs(workspace:GetDescendants()) do
+				if obj:IsA("Model") or obj:IsA("BasePart") then
+					local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy"
+					local isItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
+					
+					if SETTINGS.ESP_MONSTERS and isMonster then
+						applyESPToObj(obj, Color3.new(1,0,0), true, obj.Name, Color3.new(1,0,0))
+					elseif SETTINGS.ESP_ITEMS and isItem then
+						applyESPToObj(obj, Color3.new(0,1,0), true, obj.Name, Color3.new(0,1,0))
+					else
+						if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
+							removeESP(obj)
+						end
+					end
+				end
+			end
+		else
+			for _, obj in ipairs(workspace:GetDescendants()) do
+				if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
+					removeESP(obj)
+				end
 			end
 		end
 	end
 end)
 
--- Взаимодействия от клавиатуры (Dash & InfJump)
+RunService.Stepped:Connect(function()
+	if not isKeyValid then return end
+	if SETTINGS.NOCLIP then
+		for _, p in ipairs(charParts) do
+			p.CanCollide = false
+		end
+	end
+end)
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	
-	-- Dash
+	if not isKeyValid or gameProcessed then return end
 	if input.KeyCode == Enum.KeyCode.Q and SETTINGS.DASH_ENABLED then
 		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if hrp then
@@ -977,8 +1059,8 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- Infinite Jump
 UserInputService.JumpRequest:Connect(function()
+	if not isKeyValid then return end
 	if SETTINGS.INF_JUMP and player.Character and player.Character:FindFirstChild("Humanoid") then
 		player.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 	end
