@@ -895,46 +895,54 @@ createToggle(secVisuals, "Fullbright", "FULLBRIGHT", function(state)
 end)
 
 createToggle(secVisuals, "X-Ray", "X_RAY", function(state)
-	if state then
-		for _, part in ipairs(workspace:GetDescendants()) do
-			if part:IsA("BasePart") and not part.Parent:FindFirstChild("Humanoid") then
-				if not originalTransparencies[part] then
-					originalTransparencies[part] = part.Transparency
+	task.spawn(function()
+		if state then
+			local descendants = workspace:GetDescendants()
+			for i, part in ipairs(descendants) do
+				if part:IsA("BasePart") and not part.Parent:FindFirstChild("Humanoid") then
+					if not originalTransparencies[part] then
+						originalTransparencies[part] = part.Transparency
+					end
+					part.Transparency = 0.5
 				end
-				part.Transparency = 0.5
+				if i % 1000 == 0 then task.wait() end
 			end
-		end
-	else
-		for part, trans in pairs(originalTransparencies) do
-			if part and part.Parent then
-				part.Transparency = trans
+		else
+			for part, trans in pairs(originalTransparencies) do
+				if part and part.Parent then
+					part.Transparency = trans
+				end
 			end
+			table.clear(originalTransparencies)
 		end
-		table.clear(originalTransparencies)
-	end
+	end)
 end)
 
 local secTeleportItems = createSection(pageTeleports, "Item Bringer")
 
 local function tpToMe(itemName)
-	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not hrp then return end
-	local foundCount = 0
-	for _, obj in ipairs(workspace:GetDescendants()) do
-		if obj.Name == itemName then
-			if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
-				obj.Handle.CFrame = hrp.CFrame
-				foundCount = foundCount + 1
-			elseif obj:IsA("Model") and obj.PrimaryPart then
-				obj:SetPrimaryPartCFrame(hrp.CFrame)
-				foundCount = foundCount + 1
-			elseif obj:IsA("BasePart") then
-				obj.CFrame = hrp.CFrame
-				foundCount = foundCount + 1
+	task.spawn(function()
+		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
+		local foundCount = 0
+		local descendants = workspace:GetDescendants()
+		for i, obj in ipairs(descendants) do
+			if obj.Name == itemName then
+				if obj:IsA("Tool") and obj:FindFirstChild("Handle") then
+					obj.Handle.CFrame = hrp.CFrame
+					foundCount = foundCount + 1
+				elseif obj:IsA("Model") and obj.PrimaryPart then
+					obj:SetPrimaryPartCFrame(hrp.CFrame)
+					foundCount = foundCount + 1
+				elseif obj:IsA("BasePart") then
+					obj.CFrame = hrp.CFrame
+					foundCount = foundCount + 1
+				end
 			end
+			if i % 1000 == 0 then task.wait() end
 		end
-	end
-	sendNotification("Teleport", "Teleported " .. foundCount .. " " .. itemName .. "(s) to you.", theme.Success)
+		sendNotification("Teleport", "Teleported " .. foundCount .. " " .. itemName .. "(s) to you.", theme.Success)
+	end)
 end
 
 createButton(secTeleportItems, "Teleport Fuse to Me", theme.Accent, function() tpToMe("Fuse") end)
@@ -1013,10 +1021,11 @@ task.spawn(function()
 			end
 		end
 		
+		local descendants = workspace:GetDescendants()
 		if SETTINGS.ESP_MONSTERS or SETTINGS.ESP_ITEMS then
-			for _, obj in ipairs(workspace:GetDescendants()) do
+			for i, obj in ipairs(descendants) do
 				if obj:IsA("Model") or obj:IsA("BasePart") then
-					local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica"
+					local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica" or obj.Name == "Marionette" obj.Name == "Chica's Cake" 
 					local isItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
 					
 					if SETTINGS.ESP_MONSTERS and isMonster then
@@ -1029,16 +1038,19 @@ task.spawn(function()
 						end
 					end
 				end
+				if i % 1000 == 0 then task.wait() end
 			end
 		else
-			for _, obj in ipairs(workspace:GetDescendants()) do
+			for i, obj in ipairs(descendants) do
 				if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
 					removeESP(obj)
 				end
+				if i % 1000 == 0 then task.wait() end
 			end
 		end
 	end
 end)
+
 
 RunService.Stepped:Connect(function()
 	if not isKeyValid then return end
