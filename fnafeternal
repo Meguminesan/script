@@ -1006,46 +1006,46 @@ end
 
 task.spawn(function()
 	while task.wait(1.5) do
-		if not isKeyValid then continue end
-		
-		local chamsColor = hexToColor3(SETTINGS.ESP_CHAMS_COLOR)
-		local nameColor = hexToColor3(SETTINGS.ESP_NAME_COLOR)
-		
-		for _, p in ipairs(Players:GetPlayers()) do
-			if p ~= player and p.Character then
-				if SETTINGS.ESP_PLAYERS then
-					applyESPToObj(p.Character, chamsColor, SETTINGS.ESP_CHAMS, p.Name, nameColor)
-				else
-					removeESP(p.Character)
-				end
-			end
-		end
-		
-		local descendants = workspace:GetDescendants()
-		if SETTINGS.ESP_MONSTERS or SETTINGS.ESP_ITEMS then
-			for i, obj in ipairs(descendants) do
-				if obj:IsA("Model") or obj:IsA("BasePart") then
-					local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica" or obj.Name == "Marionette" or obj.Name == "Chica's Cake" 
-					local isItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
-					
-					if SETTINGS.ESP_MONSTERS and isMonster then
-						applyESPToObj(obj, Color3.new(1,0,0), true, obj.Name, Color3.new(1,0,0))
-					elseif SETTINGS.ESP_ITEMS and isItem then
-						applyESPToObj(obj, Color3.new(0,1,0), true, obj.Name, Color3.new(0,1,0))
+		if isKeyValid then
+			local chamsColor = hexToColor3(SETTINGS.ESP_CHAMS_COLOR)
+			local nameColor = hexToColor3(SETTINGS.ESP_NAME_COLOR)
+			
+			for _, p in ipairs(Players:GetPlayers()) do
+				if p ~= player and p.Character then
+					if SETTINGS.ESP_PLAYERS then
+						applyESPToObj(p.Character, chamsColor, SETTINGS.ESP_CHAMS, p.Name, nameColor)
 					else
-						if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
-							removeESP(obj)
-						end
+						removeESP(p.Character)
 					end
 				end
-				if i % 1000 == 0 then task.wait() end
 			end
-		else
-			for i, obj in ipairs(descendants) do
-				if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
-					removeESP(obj)
+			
+			local descendants = workspace:GetDescendants()
+			if SETTINGS.ESP_MONSTERS or SETTINGS.ESP_ITEMS then
+				for i, obj in ipairs(descendants) do
+					if obj:IsA("Model") or obj:IsA("BasePart") then
+						local isMonster = obj.Name == "Bonnie" or obj.Name == "Freddy" or obj.Name == "Foxy" or obj.Name == "Chica" or obj.Name == "Marionette" or obj.Name == "Chica's Cake"
+						local isItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
+						
+						if SETTINGS.ESP_MONSTERS and isMonster then
+							applyESPToObj(obj, Color3.new(1,0,0), true, obj.Name, Color3.new(1,0,0))
+						elseif SETTINGS.ESP_ITEMS and isItem then
+							applyESPToObj(obj, Color3.new(0,1,0), true, obj.Name, Color3.new(0,1,0))
+						else
+							if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
+								removeESP(obj)
+							end
+						end
+					end
+					if i % 1000 == 0 then task.wait() end
 				end
-				if i % 1000 == 0 then task.wait() end
+			else
+				for i, obj in ipairs(descendants) do
+					if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
+						removeESP(obj)
+					end
+					if i % 1000 == 0 then task.wait() end
+				end
 			end
 		end
 	end
