@@ -154,7 +154,7 @@ local SETTINGS = {
 	INF_JUMP = false,
 }
 
-local VALID_KEY = "NK-2026"
+local VALID_KEY = "NekoBlockssssYee"
 local isKeyValid = false
 
 local keyFrame = Instance.new("Frame")
