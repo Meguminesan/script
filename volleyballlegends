@@ -731,7 +731,9 @@ local SETTINGS = {
 	StyleSpins = false,
 	Yen = false,
 	Skills = false,
-	Delay = 0.7
+	StyleSpinsDelay = 0.1,
+	YenDelay = 0.7,
+	SkillsDelay = 0.7
 }
 
 local CONFIG_FILE = "NK_Neko_Settings_" .. tostring(player.UserId) .. ".json"
@@ -835,14 +837,116 @@ local function createTextBox(parent, text, settingKey, placeholder)
 	end)
 end
 
+local function createSlider(parent, text, settingKey, minVal, maxVal)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, 0, 0, 60)
+	container.BackgroundColor3 = theme.Sidebar
+	container.Parent = parent
+	applyCorner(container, 8)
+	applyStroke(container, theme.Stroke, 1, 0.5)
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -60, 0, 20)
+	titleLbl.Position = UDim2.new(0, 10, 0, 5)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = text
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = container
+
+	local valBox = Instance.new("TextBox")
+	valBox.Size = UDim2.new(0, 40, 0, 20)
+	valBox.Position = UDim2.new(1, -50, 0, 5)
+	valBox.BackgroundColor3 = theme.ItemBG
+	valBox.TextColor3 = theme.TextPrimary
+	valBox.Font = Enum.Font.Gotham
+	valBox.TextSize = 12
+	valBox.Text = tostring(SETTINGS[settingKey])
+	valBox.Parent = container
+	applyCorner(valBox, 4)
+	applyStroke(valBox, theme.Stroke, 1, 0.5)
+
+	local sliderBg = Instance.new("Frame")
+	sliderBg.Size = UDim2.new(1, -20, 0, 6)
+	sliderBg.Position = UDim2.new(0, 10, 0, 40)
+	sliderBg.BackgroundColor3 = theme.ItemBG
+	sliderBg.Parent = container
+	applyCorner(sliderBg, 3)
+	applyStroke(sliderBg, theme.Stroke, 1, 0.5)
+
+	local sliderFill = Instance.new("Frame")
+	local pct = (SETTINGS[settingKey] - minVal) / (maxVal - minVal)
+	sliderFill.Size = UDim2.new(pct, 0, 1, 0)
+	sliderFill.BackgroundColor3 = theme.Accent
+	sliderFill.Parent = sliderBg
+	applyCorner(sliderFill, 3)
+
+	local knob = Instance.new("Frame")
+	knob.Size = UDim2.new(0, 14, 0, 14)
+	knob.Position = UDim2.new(1, -7, 0.5, -7)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.Parent = sliderFill
+	applyCorner(knob, 7)
+
+	local dragging = false
+
+	local function updateSlider(input)
+		local pos = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+		local val = minVal + ((maxVal - minVal) * pos)
+		val = math.floor(val * 10) / 10
+		SETTINGS[settingKey] = val
+		saveConfig()
+		sliderFill.Size = UDim2.new(pos, 0, 1, 0)
+		valBox.Text = tostring(val)
+	end
+
+	sliderBg.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			updateSlider(input)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			updateSlider(input)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = false
+		end
+	end)
+
+	valBox.FocusLost:Connect(function()
+		local num = tonumber(valBox.Text)
+		if num then
+			num = math.clamp(num, minVal, maxVal)
+			SETTINGS[settingKey] = num
+			saveConfig()
+			local pos = (num - minVal) / (maxVal - minVal)
+			sliderFill.Size = UDim2.new(pos, 0, 1, 0)
+			valBox.Text = tostring(num)
+		else
+			valBox.Text = tostring(SETTINGS[settingKey])
+		end
+	end)
+end
+
 local pageDupe = createTab("Dupe")
 local pageWebhooks = createTab("Webhooks")
 local pageLogs = createTab("Logs")
 
 local secDupe = createSection(pageDupe, "Auto Farming")
 createToggle(secDupe, "Style Spins (Bronze 3)", "StyleSpins", "Style Spins Auto Started")
+createSlider(secDupe, "Style Spins Delay", "StyleSpinsDelay", 0.1, 10)
 createToggle(secDupe, "Yen (Bronze 3)", "Yen", "Yen Auto Started")
+createSlider(secDupe, "Yen Delay", "YenDelay", 0.1, 10)
 createToggle(secDupe, "Ability Spins (Silver 2)", "Skills", "Ability Auto Started")
+createSlider(secDupe, "Ability Spins Delay", "SkillsDelay", 0.1, 10)
 
 local secWh = createSection(pageWebhooks, "Webhook Configuration")
 createTextBox(secWh, "Discord Webhook URL", "WEBHOOK_URL", "https://discord.com/api/webhooks/...")
@@ -921,7 +1025,7 @@ end
 local RemotePath = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SeasonService"):WaitForChild("RF"):WaitForChild("RequestRankedReward")
 
 task.spawn(function()
-	while task.wait(0.1) do
+	while task.wait(SETTINGS.StyleSpinsDelay) do
 		if getgenv().NK_Neko_Unloaded or getgenv().NK_Neko_InstanceId ~= scriptId then break end
 		if SETTINGS.StyleSpins then
 			local s, r = pcall(function() return RemotePath:InvokeServer(1) end)
@@ -935,7 +1039,7 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-	while task.wait(SETTINGS.Delay) do
+	while task.wait(SETTINGS.YenDelay) do
 		if getgenv().NK_Neko_Unloaded or getgenv().NK_Neko_InstanceId ~= scriptId then break end
 		if SETTINGS.Yen then
 			local s, r = pcall(function() return RemotePath:InvokeServer(2) end)
@@ -945,6 +1049,12 @@ task.spawn(function()
 				if SETTINGS.WH_ON_SUCCESS then sendWebhook("Yen Claimed", parsed) end
 			end
 		end
+	end
+end)
+
+task.spawn(function()
+	while task.wait(SETTINGS.SkillsDelay) do
+		if getgenv().NK_Neko_Unloaded or getgenv().NK_Neko_InstanceId ~= scriptId then break end
 		if SETTINGS.Skills then
 			local s, r = pcall(function() return RemotePath:InvokeServer(4) end)
 			if s and r and tostring(r) ~= "false" then
