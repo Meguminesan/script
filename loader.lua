@@ -302,7 +302,7 @@ mainFrame.BackgroundColor3 = uiTheme.Dark.bg
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Visible = false
-mainFrame.ZIndex = 1
+mainFrame.ZIndex = 2
 mainFrame.Parent = screenGui
 
 local mainFrameCorner = Instance.new("UICorner")
@@ -310,10 +310,23 @@ mainFrameCorner.CornerRadius = UDim.new(0, 16)
 mainFrameCorner.Parent = mainFrame
 
 local mainFrameStroke = Instance.new("UIStroke")
-mainFrameStroke.Thickness = 1.5
-mainFrameStroke.Color = uiTheme.Dark.border
+mainFrameStroke.Thickness = 2
+mainFrameStroke.Color = getAccentColor()
 mainFrameStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 mainFrameStroke.Parent = mainFrame
+
+local glowFrame = Instance.new("Frame")
+glowFrame.Name = "GlowFrame"
+glowFrame.Size = UDim2.new(1, 16, 1, 16)
+glowFrame.Position = UDim2.new(0, -8, 0, -8)
+glowFrame.BackgroundColor3 = getAccentColor()
+glowFrame.BackgroundTransparency = 0.82
+glowFrame.ZIndex = 1
+glowFrame.Parent = mainFrame
+
+local glowCorner = Instance.new("UICorner")
+glowCorner.CornerRadius = UDim.new(0, 20)
+glowCorner.Parent = glowFrame
 
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
@@ -612,12 +625,193 @@ workspaceContainer.BackgroundTransparency = 1
 workspaceContainer.ZIndex = 2
 workspaceContainer.Parent = mainFrame
 
+local currentMetrics = {
+	Logins = 1,
+	TotalTime = 0
+}
+
+local function saveMetrics()
+	local filename = "NekoLib_Metrics_" .. tostring(localPlayer.UserId) .. ".json"
+	if writefile then
+		writefile(filename, HttpService:JSONEncode(currentMetrics))
+	end
+end
+
+local function loadMetrics()
+	local filename = "NekoLib_Metrics_" .. tostring(localPlayer.UserId) .. ".json"
+	if readfile and isfile and isfile(filename) then
+		local success, data = pcall(function()
+			return HttpService:JSONDecode(readfile(filename))
+		end)
+		if success and type(data) == "table" then
+			currentMetrics.Logins = (data.Logins or 0) + 1
+			currentMetrics.TotalTime = data.TotalTime or 0
+		end
+	end
+	saveMetrics()
+end
+
+task.spawn(loadMetrics)
+
 local homePanel = Instance.new("Frame")
 homePanel.Name = "HomePanel"
 homePanel.Size = UDim2.new(1, 0, 1, 0)
 homePanel.BackgroundTransparency = 1
 homePanel.ZIndex = 3
 homePanel.Parent = workspaceContainer
+
+local profileCard = Instance.new("Frame")
+profileCard.Name = "OpaqueFrame"
+profileCard.Size = UDim2.new(1, 0, 0, 100)
+profileCard.Position = UDim2.new(0, 0, 0, 10)
+profileCard.BackgroundColor3 = uiTheme.Dark.card
+profileCard.ZIndex = 4
+profileCard.Parent = homePanel
+
+local profileCardCorner = Instance.new("UICorner")
+profileCardCorner.CornerRadius = UDim.new(0, 12)
+profileCardCorner.Parent = profileCard
+
+local profileCardStroke = Instance.new("UIStroke")
+profileCardStroke.Thickness = 1
+profileCardStroke.Color = uiTheme.Dark.border
+profileCardStroke.Parent = profileCard
+
+local profileAvatar = Instance.new("ImageLabel")
+profileAvatar.Name = "ProfileAvatar"
+profileAvatar.Size = UDim2.new(0, 80, 0, 80)
+profileAvatar.Position = UDim2.new(0, 10, 0.5, -40)
+profileAvatar.BackgroundColor3 = uiTheme.Dark.border
+profileAvatar.ZIndex = 5
+profileAvatar.Parent = profileCard
+
+local profileAvatarCorner = Instance.new("UICorner")
+profileAvatarCorner.CornerRadius = UDim.new(0, 40)
+profileAvatarCorner.Parent = profileAvatar
+
+task.spawn(function()
+	local success, result = pcall(function()
+		return Players:GetUserThumbnailAsync(localPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+	end)
+	if success then
+		profileAvatar.Image = result
+	end
+end)
+
+local profileName = Instance.new("TextLabel")
+profileName.Name = "ProfileName"
+profileName.Size = UDim2.new(1, -110, 0, 24)
+profileName.Position = UDim2.new(0, 105, 0, 18)
+profileName.BackgroundTransparency = 1
+profileName.Text = localPlayer.DisplayName
+profileName.TextColor3 = uiTheme.Dark.text
+profileName.Font = Enum.Font.GothamBold
+profileName.TextSize = 18
+profileName.TextXAlignment = Enum.TextXAlignment.Left
+profileName.ZIndex = 5
+profileName.Parent = profileCard
+
+local profileUser = Instance.new("TextLabel")
+profileUser.Name = "DescLabel"
+profileUser.Size = UDim2.new(1, -110, 0, 18)
+profileUser.Position = UDim2.new(0, 105, 0, 42)
+profileUser.BackgroundTransparency = 1
+profileUser.Text = "@" .. localPlayer.Name
+profileUser.TextColor3 = uiTheme.Dark.subText
+profileUser.Font = Enum.Font.Gotham
+profileUser.TextSize = 13
+profileUser.TextXAlignment = Enum.TextXAlignment.Left
+profileUser.ZIndex = 5
+profileUser.Parent = profileCard
+
+local accountAgeLabel = Instance.new("TextLabel")
+accountAgeLabel.Name = "DescLabel"
+accountAgeLabel.Size = UDim2.new(1, -110, 0, 18)
+accountAgeLabel.Position = UDim2.new(0, 105, 0, 62)
+accountAgeLabel.BackgroundTransparency = 1
+accountAgeLabel.Text = "Account Age: " .. tostring(localPlayer.AccountAge) .. " days"
+accountAgeLabel.TextColor3 = uiTheme.Dark.subText
+accountAgeLabel.Font = Enum.Font.Gotham
+accountAgeLabel.TextSize = 12
+accountAgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+accountAgeLabel.ZIndex = 5
+accountAgeLabel.Parent = profileCard
+
+local statsContainer = Instance.new("Frame")
+statsContainer.Name = "StatsContainer"
+statsContainer.Size = UDim2.new(1, 0, 0, 160)
+statsContainer.Position = UDim2.new(0, 0, 0, 130)
+statsContainer.BackgroundTransparency = 1
+statsContainer.ZIndex = 4
+statsContainer.Parent = homePanel
+
+local statsLayout = Instance.new("UIGridLayout")
+statsLayout.CellSize = UDim2.new(0.5, -8, 0.5, -8)
+statsLayout.CellPadding = UDim2.new(0, 16, 0, 16)
+statsLayout.Parent = statsContainer
+
+local function createStatBox(title, initialValue)
+	local box = Instance.new("Frame")
+	box.Name = "OpaqueFrame"
+	box.BackgroundColor3 = uiTheme.Dark.card
+	box.ZIndex = 5
+	box.Parent = statsContainer
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = box
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 1
+	stroke.Color = uiTheme.Dark.border
+	stroke.Parent = box
+
+	local lblTitle = Instance.new("TextLabel")
+	lblTitle.Name = "DescLabel"
+	lblTitle.Size = UDim2.new(1, -24, 0, 20)
+	lblTitle.Position = UDim2.new(0, 12, 0, 10)
+	lblTitle.BackgroundTransparency = 1
+	lblTitle.Text = title
+	lblTitle.TextColor3 = uiTheme.Dark.subText
+	lblTitle.Font = Enum.Font.GothamSemibold
+	lblTitle.TextSize = 12
+	lblTitle.TextXAlignment = Enum.TextXAlignment.Left
+	lblTitle.ZIndex = 6
+	lblTitle.Parent = box
+
+	local lblVal = Instance.new("TextLabel")
+	lblVal.Name = "StatValueLabel"
+	lblVal.Size = UDim2.new(1, -24, 0, 30)
+	lblVal.Position = UDim2.new(0, 12, 0, 30)
+	lblVal.BackgroundTransparency = 1
+	lblVal.Text = initialValue
+	lblVal.TextColor3 = uiTheme.Dark.text
+	lblVal.Font = Enum.Font.GothamBold
+	lblVal.TextSize = 16
+	lblVal.TextXAlignment = Enum.TextXAlignment.Left
+	lblVal.ZIndex = 6
+	lblVal.Parent = box
+
+	return lblVal
+end
+
+local keyStatValue = createStatBox("Authentication Key", "NekoLib_FreeKey")
+local loginStatValue = createStatBox("System Access Logins", "0 times")
+local timeStatValue = createStatBox("Dashboard Execution Session", "0h 0m 0s")
+local versionStatValue = createStatBox("Client Engine Release", "v0.2beta")
+
+task.spawn(function()
+	while true do
+		loginStatValue.Text = tostring(currentMetrics.Logins) .. " times"
+		local hours = math.floor(currentMetrics.TotalTime / 3600)
+		local mins = math.floor((currentMetrics.TotalTime % 3600) / 60)
+		local secs = currentMetrics.TotalTime % 60
+		timeStatValue.Text = string.format("%dh %dm %ds", hours, mins, secs)
+		task.wait(1)
+		currentMetrics.TotalTime = currentMetrics.TotalTime + 1
+		saveMetrics()
+	end
+end)
 
 local scriptsPanel = Instance.new("Frame")
 scriptsPanel.Name = "ScriptsPanel"
@@ -627,50 +821,70 @@ scriptsPanel.Visible = false
 scriptsPanel.ZIndex = 3
 scriptsPanel.Parent = workspaceContainer
 
-local settingsPanel = Instance.new("Frame")
-settingsPanel.Name = "SettingsPanel"
-settingsPanel.Size = UDim2.new(1, 0, 1, 0)
-settingsPanel.BackgroundTransparency = 1
-settingsPanel.Visible = false
-settingsPanel.ZIndex = 3
-settingsPanel.Parent = workspaceContainer
+local categoryContainer = Instance.new("Frame")
+categoryContainer.Name = "CategoryContainer"
+categoryContainer.Size = UDim2.new(1, 0, 0, 35)
+categoryContainer.Position = UDim2.new(0, 0, 0, 0)
+categoryContainer.BackgroundTransparency = 1
+categoryContainer.ZIndex = 4
+categoryContainer.Parent = scriptsPanel
 
-local scriptsTitle = Instance.new("TextLabel")
-scriptsTitle.Name = "ScriptsTitle"
-scriptsTitle.Size = UDim2.new(1, 0, 0, 30)
-scriptsTitle.BackgroundTransparency = 1
-scriptsTitle.Text = "Available Scripts"
-scriptsTitle.TextColor3 = uiTheme.Dark.text
-scriptsTitle.Font = Enum.Font.GothamBold
-scriptsTitle.TextSize = 20
-scriptsTitle.TextXAlignment = Enum.TextXAlignment.Left
-scriptsTitle.ZIndex = 4
-scriptsTitle.Parent = scriptsPanel
+local categoryLayout = Instance.new("UIListLayout")
+categoryLayout.FillDirection = Enum.FillDirection.Horizontal
+categoryLayout.Padding = UDim.new(0, 10)
+categoryLayout.Parent = categoryContainer
 
-local scriptsScroll = Instance.new("ScrollingFrame")
-scriptsScroll.Name = "ScriptsScroll"
-scriptsScroll.Size = UDim2.new(1, 0, 1, -40)
-scriptsScroll.Position = UDim2.new(0, 0, 0, 40)
-scriptsScroll.BackgroundTransparency = 1
-scriptsScroll.BorderSizePixel = 0
-scriptsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-scriptsScroll.ScrollBarThickness = 4
-scriptsScroll.ScrollBarImageColor3 = uiTheme.Dark.border
-scriptsScroll.ZIndex = 4
-scriptsScroll.Parent = scriptsPanel
+local utilityScroll = Instance.new("ScrollingFrame")
+utilityScroll.Name = "ScriptsScroll"
+utilityScroll.Size = UDim2.new(1, 0, 1, -50)
+utilityScroll.Position = UDim2.new(0, 0, 0, 50)
+utilityScroll.BackgroundTransparency = 1
+utilityScroll.BorderSizePixel = 0
+utilityScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+utilityScroll.ScrollBarThickness = 4
+utilityScroll.ScrollBarImageColor3 = uiTheme.Dark.border
+utilityScroll.ZIndex = 4
+utilityScroll.Parent = scriptsPanel
 
-local scriptsLayout = Instance.new("UIListLayout")
-scriptsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-scriptsLayout.Padding = UDim.new(0, 10)
-scriptsLayout.Parent = scriptsScroll
+local utilityLayout = Instance.new("UIListLayout")
+utilityLayout.SortOrder = Enum.SortOrder.LayoutOrder
+utilityLayout.Padding = UDim.new(0, 10)
+utilityLayout.Parent = utilityScroll
 
-local function addScriptItem(name, desc, code)
+table.insert(activeConnections, utilityLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	utilityScroll.CanvasSize = UDim2.new(0, 0, 0, utilityLayout.AbsoluteContentSize.Y + 10)
+end))
+
+local gamesScroll = Instance.new("ScrollingFrame")
+gamesScroll.Name = "ScriptsScroll"
+gamesScroll.Size = UDim2.new(1, 0, 1, -50)
+gamesScroll.Position = UDim2.new(0, 0, 0, 50)
+gamesScroll.BackgroundTransparency = 1
+gamesScroll.BorderSizePixel = 0
+gamesScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+gamesScroll.ScrollBarThickness = 4
+gamesScroll.ScrollBarImageColor3 = uiTheme.Dark.border
+gamesScroll.Visible = false
+gamesScroll.ZIndex = 4
+gamesScroll.Parent = scriptsPanel
+
+local gamesLayout = Instance.new("UIListLayout")
+gamesLayout.SortOrder = Enum.SortOrder.LayoutOrder
+gamesLayout.Padding = UDim.new(0, 10)
+gamesLayout.Parent = gamesScroll
+
+table.insert(activeConnections, gamesLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	gamesScroll.CanvasSize = UDim2.new(0, 0, 0, gamesLayout.AbsoluteContentSize.Y + 10)
+end))
+
+local function addScriptItem(category, name, desc, code)
+	local parentScroll = category == "Utility" and utilityScroll or gamesScroll
 	local item = Instance.new("Frame")
 	item.Name = "OpaqueFrame"
 	item.Size = UDim2.new(1, -10, 0, 60)
 	item.BackgroundColor3 = uiTheme.Dark.card
 	item.ZIndex = 5
-	item.Parent = scriptsScroll
+	item.Parent = parentScroll
 
 	local itemCorner = Instance.new("UICorner")
 	itemCorner.CornerRadius = UDim.new(0, 8)
@@ -731,12 +945,51 @@ local function addScriptItem(name, desc, code)
 	end))
 end
 
-addScriptItem("Advanced Hub", "Universal exploit script hub.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/advancedhub'))()")
-addScriptItem("Infinite Yield", "Popular admin command script.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()")
+local function createCategoryBtn(name)
+	local btn = Instance.new("TextButton")
+	btn.Name = "OpaqueButton"
+	btn.Size = UDim2.new(0, 100, 1, 0)
+	btn.BackgroundColor3 = getAccentColor()
+	btn.Text = name
+	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 12
+	btn.ZIndex = 5
+	btn.Parent = categoryContainer
 
-table.insert(activeConnections, scriptsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	scriptsScroll.CanvasSize = UDim2.new(0, 0, 0, scriptsLayout.AbsoluteContentSize.Y + 10)
-end))
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = btn
+
+	return btn
+end
+
+local btnUtility = createCategoryBtn("Utility")
+local btnGames = createCategoryBtn("Games")
+
+local function switchCategory(cat)
+	utilityScroll.Visible = (cat == "Utility")
+	gamesScroll.Visible = (cat == "Games")
+	btnUtility.BackgroundColor3 = cat == "Utility" and getAccentColor() or Color3.fromRGB(40, 40, 45)
+	btnGames.BackgroundColor3 = cat == "Games" and getAccentColor() or Color3.fromRGB(40, 40, 45)
+end
+
+table.insert(activeConnections, btnUtility.MouseButton1Click:Connect(function() switchCategory("Utility") end))
+table.insert(activeConnections, btnGames.MouseButton1Click:Connect(function() switchCategory("Games") end))
+switchCategory("Utility")
+
+addScriptItem("Utility", "Advanced Hub", "Universal exploit script hub.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/advancedhub'))()")
+addScriptItem("Utility", "Infinite Yield", "Popular admin command script.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()")
+addScriptItem("Games", "KatScript", "Specialized script module for Knife Ability Test.", "print('KatScript loaded')")
+addScriptItem("Games", "Bedwars Hub", "Specialized utility for Roblox Bedwars.", "print('Bedwars loaded')")
+
+local settingsPanel = Instance.new("Frame")
+settingsPanel.Name = "SettingsPanel"
+settingsPanel.Size = UDim2.new(1, 0, 1, 0)
+settingsPanel.BackgroundTransparency = 1
+settingsPanel.Visible = false
+settingsPanel.ZIndex = 3
+settingsPanel.Parent = workspaceContainer
 
 local settingsTitle = Instance.new("TextLabel")
 settingsTitle.Name = "SettingsTitle"
@@ -1117,6 +1370,8 @@ local function applyAccentUpdates()
 	logoBadge.BackgroundColor3 = getAccentColor()
 	loadingFill.BackgroundColor3 = getAccentColor()
 	btnContinue.BackgroundColor3 = getAccentColor()
+	mainFrameStroke.Color = getAccentColor()
+	glowFrame.BackgroundColor3 = getAccentColor()
 	
 	local activeTab = homePanel.Visible and "Home" or (scriptsPanel.Visible and "Scripts" or "Settings")
 	local tabs = {Home = tabHome, Scripts = tabScripts, Settings = tabSettings}
@@ -1126,8 +1381,12 @@ local function applyAccentUpdates()
 		if stroke then stroke.Color = getAccentColor() end
 	end
 
+	local activeCat = utilityScroll.Visible and "Utility" or "Games"
+	btnUtility.BackgroundColor3 = activeCat == "Utility" and getAccentColor() or Color3.fromRGB(40, 40, 45)
+	btnGames.BackgroundColor3 = activeCat == "Games" and getAccentColor() or Color3.fromRGB(40, 40, 45)
+
 	for _, desc in ipairs(mainFrame:GetDescendants()) do
-		if desc:IsA("TextButton") and desc.Name == "OpaqueButton" and desc ~= blurBtn then
+		if desc:IsA("TextButton") and desc.Name == "OpaqueButton" and desc ~= blurBtn and desc ~= btnUtility and desc ~= btnGames then
 			desc.BackgroundColor3 = getAccentColor()
 		end
 	end
@@ -1147,27 +1406,37 @@ local function themeTransition(themeName)
 	tween(keyInput, { BackgroundColor3 = palette.bg, TextColor3 = palette.text, PlaceholderColor3 = palette.subText })
 	tween(keyInputStroke, { Color = palette.border })
 	tween(mainFrame, { BackgroundColor3 = palette.bg })
-	tween(mainFrameStroke, { Color = palette.border })
-	tween(keyTitle, { TextColor3 = palette.text })
-	tween(keySubtitle, { TextColor3 = palette.subText })
-	tween(sidebar, { BackgroundColor3 = palette.card })
-	tween(sidebarTitle, { TextColor3 = palette.text })
-	tween(sidebarCover, { BackgroundColor3 = palette.card })
-	tween(sidebarDivider, { Color = palette.border })
-	tween(userDisplayName, { TextColor3 = palette.text })
-	tween(userHandle, { TextColor3 = palette.subText })
-	tween(headerTitle, { TextColor3 = palette.text })
-	tween(welcomeText, { TextColor3 = palette.text })
-	tween(descText, { TextColor3 = palette.subText })
-	tween(scriptsTitle, { TextColor3 = palette.text })
-	tween(settingsTitle, { TextColor3 = palette.text })
-	tween(settingsDesc, { TextColor3 = palette.subText })
-	scriptsScroll.ScrollBarImageColor3 = palette.border
 	tween(btnUnload, { BackgroundColor3 = palette.bg })
 	tween(btnGetKey, { BackgroundColor3 = palette.bg })
 	tween(btnClose, { BackgroundColor3 = palette.card })
 	tween(btnTheme, { BackgroundColor3 = palette.card, TextColor3 = palette.text })
 	btnTheme.Text = themeName == "Dark" and "🌙" or "☀️"
+
+	for _, desc in ipairs(mainFrame:GetDescendants()) do
+		if desc:IsA("Frame") then
+			if desc.Name == "OpaqueFrame" then
+				tween(desc, { BackgroundColor3 = palette.card })
+				local stroke = desc:FindFirstChildOfClass("UIStroke")
+				if stroke then tween(stroke, { Color = palette.border }) end
+			elseif desc.Name == "Sidebar" or desc.Name == "SidebarCover" then
+				tween(desc, { BackgroundColor3 = palette.card })
+			elseif desc.Name == "SidebarDivider" then
+				tween(desc, { BackgroundColor3 = palette.border })
+			end
+		elseif desc:IsA("TextLabel") then
+			if desc.Name == "DescLabel" or desc.Name == "SettingsDesc" or desc.Name == "UserHandle" or desc.Name:find("Sub") or desc.Name:find("StatValue") then
+				tween(desc, { TextColor3 = palette.subText })
+			elseif desc.Name ~= "LogoBadgeText" and desc.Name ~= "LogoTitle" then
+				tween(desc, { TextColor3 = palette.text })
+			end
+		elseif desc:IsA("TextBox") then
+			tween(desc, { BackgroundColor3 = palette.bg, TextColor3 = palette.text })
+		elseif desc:IsA("UIStroke") then
+			if desc.Parent.Name ~= "MainFrame" and desc.Parent.Name ~= "GlowFrame" and not desc.Parent.Name:find("Tab_") then
+				tween(desc, { Color = palette.border })
+			end
+		end
+	end
 
 	local activeTab = homePanel.Visible and "Home" or (scriptsPanel.Visible and "Scripts" or "Settings")
 
@@ -1185,22 +1454,7 @@ local function themeTransition(themeName)
 			end
 		end
 	end
-
-	for _, desc in ipairs(scriptsScroll:GetDescendants()) do
-		if desc:IsA("Frame") and desc.Name == "OpaqueFrame" then
-			tween(desc, { BackgroundColor3 = palette.card })
-			local stroke = desc:FindFirstChildOfClass("UIStroke")
-			if stroke then tween(stroke, { Color = palette.border }) end
-		elseif desc:IsA("TextLabel") then
-			if desc.Name == "TitleLabel" then
-				tween(desc, { TextColor3 = palette.text })
-			elseif desc.Name == "DescLabel" then
-				tween(desc, { TextColor3 = palette.subText })
-			end
-		end
-	end
 end
-
 local function destroyLibrary()
 	for _, connection in ipairs(activeConnections) do
 		if connection then
