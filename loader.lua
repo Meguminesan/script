@@ -248,6 +248,37 @@ keyInputStroke.Thickness = 1
 keyInputStroke.Color = uiTheme.Dark.border
 keyInputStroke.Parent = keyInput
 
+local rememberCheckbox = Instance.new("TextButton")
+rememberCheckbox.Name = "RememberCheckbox"
+rememberCheckbox.Size = UDim2.new(0, 160, 0, 20)
+rememberCheckbox.Position = UDim2.new(0, 60, 0.58, 5)
+rememberCheckbox.BackgroundTransparency = 1
+rememberCheckbox.Text = "Remember me (3 days)"
+rememberCheckbox.TextColor3 = uiTheme.Dark.subText
+rememberCheckbox.Font = Enum.Font.Gotham
+rememberCheckbox.TextSize = 12
+rememberCheckbox.TextXAlignment = Enum.TextXAlignment.Left
+rememberCheckbox.ZIndex = 13
+rememberCheckbox.Parent = keyWindow
+
+local rememberIndicator = Instance.new("Frame")
+rememberIndicator.Name = "RememberIndicator"
+rememberIndicator.Size = UDim2.new(0, 14, 0, 14)
+rememberIndicator.Position = UDim2.new(0, -20, 0.5, -7)
+rememberIndicator.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+rememberIndicator.ZIndex = 14
+rememberIndicator.Parent = rememberCheckbox
+
+local rememberIndicatorCorner = Instance.new("UICorner")
+rememberIndicatorCorner.CornerRadius = UDim.new(0, 3)
+rememberIndicatorCorner.Parent = rememberIndicator
+
+local rememberState = false
+table.insert(activeConnections, rememberCheckbox.MouseButton1Click:Connect(function()
+	rememberState = not rememberState
+	rememberIndicator.BackgroundColor3 = rememberState and getAccentColor() or Color3.fromRGB(30, 30, 35)
+end))
+
 local keyButtonsContainer = Instance.new("Frame")
 keyButtonsContainer.Name = "KeyButtonsContainer"
 keyButtonsContainer.Size = UDim2.new(1, -80, 0, 42)
@@ -342,8 +373,8 @@ sidebarCorner.Parent = sidebar
 
 local sidebarCover = Instance.new("Frame")
 sidebarCover.Name = "SidebarCover"
-sidebarCover.Size = UDim2.new(0, 25, 1, 0)
-sidebarCover.Position = UDim2.new(1, -25, 0, 0)
+sidebarCover.Size = UDim2.new(0, 25, 1, -32)
+sidebarCover.Position = UDim2.new(1, -25, 0, 16)
 sidebarCover.BackgroundColor3 = uiTheme.Dark.card
 sidebarCover.BorderSizePixel = 0
 sidebarCover.ZIndex = 2
@@ -351,8 +382,8 @@ sidebarCover.Parent = sidebar
 
 local sidebarDivider = Instance.new("Frame")
 sidebarDivider.Name = "SidebarDivider"
-sidebarDivider.Size = UDim2.new(0, 1, 1, 0)
-sidebarDivider.Position = UDim2.new(1, 0, 0, 0)
+sidebarDivider.Size = UDim2.new(0, 1, 1, -32)
+sidebarDivider.Position = UDim2.new(1, 0, 0, 16)
 sidebarDivider.BackgroundColor3 = uiTheme.Dark.border
 sidebarDivider.BorderSizePixel = 0
 sidebarDivider.ZIndex = 3
@@ -1045,8 +1076,14 @@ local currentSettings = {
 	Blur = false,
 	Transparency = 0,
 	Font = "Gotham",
-	FontSize = 14
+	FontSize = 14,
+	BoldWeight = false,
+	Keybind = "RightControl",
+	RememberUntil = 0
 }
+
+local currentKeybind = Enum.KeyCode.RightControl
+local isRebinding = false
 
 local function applyGuiScale(scale)
 	currentSettings.GuiScale = scale
@@ -1087,9 +1124,25 @@ local function applyFontAndSize(fontName, size)
 	end
 end
 
+local function applyWeight(bold)
+	currentSettings.BoldWeight = bold
+	for _, desc in ipairs(mainFrame:GetDescendants()) do
+		if desc:IsA("TextLabel") or desc:IsA("TextButton") then
+			if desc.Name ~= "LogoBadgeText" and desc.Name ~= "LogoTitle" then
+				if bold then
+					desc.Font = Enum.Font.GothamBold
+				else
+					desc.Font = Enum.Font.Gotham
+				end
+			end
+		end
+	end
+end
+
 local HttpService = game:GetService("HttpService")
 
 local function saveSettings()
+	currentSettings.Keybind = currentKeybind.Name
 	local json = HttpService:JSONEncode(currentSettings)
 	local filename = "NekoLib_" .. tostring(localPlayer.UserId) .. ".json"
 	if writefile then
@@ -1113,11 +1166,28 @@ local function loadSettings()
 			applyBlur(currentSettings.Blur)
 			applyTransparency(currentSettings.Transparency)
 			applyFontAndSize(currentSettings.Font, currentSettings.FontSize)
+			applyWeight(currentSettings.BoldWeight)
+			if currentSettings.Keybind then
+				currentKeybind = Enum.KeyCode[currentSettings.Keybind] or Enum.KeyCode.RightControl
+			end
 		end
 	end
 end
 
 task.spawn(loadSettings)
+
+table.insert(activeConnections, UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+	if isRebinding then
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			currentKeybind = input.KeyCode
+			isRebinding = false
+			saveSettings()
+		end
+	elseif input.KeyCode == currentKeybind then
+		mainFrame.Visible = not mainFrame.Visible
+	end
+end))
 
 local function createSettingItem(name, desc)
 	local item = Instance.new("Frame")
@@ -1293,6 +1363,70 @@ table.insert(activeConnections, fontSizeBtn.MouseButton1Click:Connect(function()
 	fontSizeBtn.Text = tostring(nextSize) .. " px"
 end))
 
+local weightItem = createSettingItem("Bold Font", "Toggles bold weights for the UI system.")
+local weightBtn = Instance.new("TextButton")
+weightBtn.Name = "OpaqueButton"
+weightBtn.Size = UDim2.new(0, 100, 0, 30)
+weightBtn.Position = UDim2.new(1, -112, 0.5, -15)
+weightBtn.BackgroundColor3 = getAccentColor()
+weightBtn.Text = currentSettings.BoldWeight and "ON" or "OFF"
+weightBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+weightBtn.Font = Enum.Font.GothamBold
+weightBtn.TextSize = 12
+weightBtn.ZIndex = 6
+weightBtn.Parent = weightItem
+
+local weightBtnCorner = Instance.new("UICorner")
+weightBtnCorner.CornerRadius = UDim.new(0, 6)
+weightBtnCorner.Parent = weightBtn
+
+table.insert(activeConnections, weightBtn.MouseButton1Click:Connect(function()
+	local target = not currentSettings.BoldWeight
+	applyWeight(target)
+	weightBtn.Text = target and "ON" or "OFF"
+end))
+
+local keybindItem = createSettingItem("Toggle UI", "Press to assign a new display toggle key.")
+local keybindBtn = Instance.new("TextButton")
+keybindBtn.Name = "OpaqueButton"
+keybindBtn.Size = UDim2.new(0, 100, 0, 30)
+keybindBtn.Position = UDim2.new(1, -112, 0.5, -15)
+keybindBtn.BackgroundColor3 = getAccentColor()
+keybindBtn.Text = currentKeybind.Name
+keybindBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+keybindBtn.Font = Enum.Font.GothamBold
+keybindBtn.TextSize = 12
+keybindBtn.ZIndex = 6
+keybindBtn.Parent = keybindItem
+
+local keybindBtnCorner = Instance.new("UICorner")
+keybindBtnCorner.CornerRadius = UDim.new(0, 6)
+keybindBtnCorner.Parent = keybindBtn
+
+table.insert(activeConnections, keybindBtn.MouseButton1Click:Connect(function()
+	isRebinding = true
+	keybindBtn.Text = "..."
+end))
+
+local unloadItem = createSettingItem("System Unload", "Terminates the interface and active loops completely.")
+local unloadBtn = Instance.new("TextButton")
+unloadBtn.Name = "OpaqueButton"
+unloadBtn.Size = UDim2.new(0, 100, 0, 30)
+unloadBtn.Position = UDim2.new(1, -112, 0.5, -15)
+unloadBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+unloadBtn.Text = "Unload Lib"
+unloadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+unloadBtn.Font = Enum.Font.GothamBold
+unloadBtn.TextSize = 12
+unloadBtn.ZIndex = 6
+unloadBtn.Parent = unloadItem
+
+local unloadBtnCorner = Instance.new("UICorner")
+unloadBtnCorner.CornerRadius = UDim.new(0, 6)
+unloadBtnCorner.Parent = unloadBtn
+
+table.insert(activeConnections, unloadBtn.MouseButton1Click:Connect(destroyLibrary))
+
 local saveBtn = Instance.new("TextButton")
 saveBtn.Name = "OpaqueButton"
 saveBtn.Size = UDim2.new(0, 150, 0, 36)
@@ -1310,7 +1444,6 @@ saveBtnCorner.CornerRadius = UDim.new(0, 8)
 saveBtnCorner.Parent = saveBtn
 
 table.insert(activeConnections, saveBtn.MouseButton1Click:Connect(saveSettings))
-
 local function switchTab(tabName)
 	homePanel.Visible = (tabName == "Home")
 	scriptsPanel.Visible = (tabName == "Scripts")
@@ -1525,12 +1658,44 @@ local function startCoreLoop()
 	task.wait(0.4)
 	splashFrame.Visible = false
 
+	if currentSettings.RememberUntil and currentSettings.RememberUntil > os.time() then
+		fullScreenContainer.Visible = false
+		mainFrame.Visible = true
+		fadeUI(mainFrame, 0, 0.5)
+		dragLogic()
+		applyHSVInteraction()
+		applyAccentUpdates()
+		return
+	end
+
 	keyFrame.Visible = true
 	fadeUI(keyFrame, 0, 0.3)
 	applyAccentUpdates()
 
 	table.insert(activeConnections, btnContinue.MouseButton1Click:Connect(function()
-		if keyInput.Text == "NekoLib_FreeKey" then
+		local p1 = ""
+		for _, v in ipairs({241, 310, 328, 340, 235}) do
+			p1 = p1 .. string.char((v - 7) / 3)
+		end
+
+		local p2 = ""
+		for _, v in ipairs({46, 5, 0, 25, 53}) do
+			p2 = p2 .. string.char(bit32.bxor(v, 95))
+		end
+
+		local p3 = ""
+		local dict = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789"
+		for _, idx in ipairs({5, 5, 37, 5, 25}) do
+			p3 = p3 .. dict:sub(idx, idx)
+		end
+
+		local decryptedKey = p1 .. p2 .. p3
+
+		if keyInput.Text == decryptedKey then
+			if rememberState then
+				currentSettings.RememberUntil = os.time() + (3 * 24 * 3600)
+				saveSettings()
+			end
 			fadeUI(fullScreenContainer, 1, 0.5)
 			task.wait(0.5)
 			
