@@ -8,6 +8,9 @@ local localPlayer = Players.LocalPlayer
 local parentUI = game:GetService("CoreGui") or localPlayer:WaitForChild("PlayerGui")
 
 local activeConnections = {}
+local HttpService = game:GetService("HttpService")
+local homePanel, scriptsPanel, settingsPanel
+local destroyLibrary
 local uiTheme = {
 	Current = "Dark",
 	Hue = 0.9,
@@ -684,7 +687,7 @@ end
 
 task.spawn(loadMetrics)
 
-local homePanel = Instance.new("Frame")
+homePanel = Instance.new("Frame")
 homePanel.Name = "HomePanel"
 homePanel.Size = UDim2.new(1, 0, 1, 0)
 homePanel.BackgroundTransparency = 1
@@ -844,7 +847,7 @@ task.spawn(function()
 	end
 end)
 
-local scriptsPanel = Instance.new("Frame")
+scriptsPanel = Instance.new("Frame")
 scriptsPanel.Name = "ScriptsPanel"
 scriptsPanel.Size = UDim2.new(1, 0, 1, 0)
 scriptsPanel.BackgroundTransparency = 1
@@ -1017,7 +1020,7 @@ addScriptItem("Games", "Jujutsu Shenenigans", "Auto BlackFlash for Vessel skill 
 addScriptItem("Games", "FNAF: Eternal Nights", "Monsters ESP/Players ESP, Teleport any Item in game to you, ESP any item. FullBright + Noclip", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/fnafeternal'))()")
 addScriptItem("Games", "Volleyball Legends", "Style/Ability Lucky Spins Dupe, Yen Dupe, logs and Webhook System with settings.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/volleyballlegends'))()")
 
-local settingsPanel = Instance.new("Frame")
+settingsPanel = Instance.new("Frame")
 settingsPanel.Name = "SettingsPanel"
 settingsPanel.Size = UDim2.new(1, 0, 1, 0)
 settingsPanel.BackgroundTransparency = 1
@@ -1591,7 +1594,7 @@ local function themeTransition(themeName)
 		end
 	end
 end
-local function destroyLibrary()
+function destroyLibrary()
 	for _, connection in ipairs(activeConnections) do
 		if connection then
 			connection:Disconnect()
