@@ -978,10 +978,13 @@ table.insert(activeConnections, btnUtility.MouseButton1Click:Connect(function() 
 table.insert(activeConnections, btnGames.MouseButton1Click:Connect(function() switchCategory("Games") end))
 switchCategory("Utility")
 
-addScriptItem("Utility", "Advanced Hub", "Universal exploit script hub.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/advancedhub'))()")
+addScriptItem("Utility", "Advanced Hub", "This universal script has combat, characteristics, visual esp and many other utility functions.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/advancedhub'))()")
+addScriptItem("Utility", "Product Fucker", "Get any unprotected product.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/productfucker'))()")
 addScriptItem("Utility", "Infinite Yield", "Popular admin command script.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()")
-addScriptItem("Games", "KatScript", "Specialized script module for Knife Ability Test.", "print('KatScript loaded')")
-addScriptItem("Games", "Bedwars Hub", "Specialized utility for Roblox Bedwars.", "print('Bedwars loaded')")
+addScriptItem("Games", "Sol's RNG", "Webhooking Biomes, Auras, Tips, Merchants, Full Settings for all Webhooks.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/solsrngeggs'))()")
+addScriptItem("Games", "Jujutsu Shenenigans", "Auto BlackFlash for Vessel skill 3, Bind Systems.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/jujutsush'))()")
+addScriptItem("Games", "FNAF: Eternal Nights", "Monsters ESP/Players ESP, Teleport any Item in game to you, ESP any item. FullBright + Noclip", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/fnafeternal'))()")
+addScriptItem("Games", "Volleyball Legends", "Style/Ability Lucky Spins Dupe, Yen Dupe, logs and Webhook System with settings.", "loadstring(game:HttpGet('https://raw.githubusercontent.com/Meguminesan/script/refs/heads/main/volleyballlegends'))()")
 
 local settingsPanel = Instance.new("Frame")
 settingsPanel.Name = "SettingsPanel"
