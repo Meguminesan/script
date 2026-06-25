@@ -296,8 +296,8 @@ local btnContinue = createKeyButton("Continue", 3, true)
 
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 580, 0, 380)
-mainFrame.Position = UDim2.new(0.5, -290, 0.5, -190)
+mainFrame.Size = UDim2.new(0, 720, 0, 480)
+mainFrame.Position = UDim2.new(0.5, -360, 0.5, -240)
 mainFrame.BackgroundColor3 = uiTheme.Dark.bg
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -317,7 +317,7 @@ mainFrameStroke.Parent = mainFrame
 
 local sidebar = Instance.new("Frame")
 sidebar.Name = "Sidebar"
-sidebar.Size = UDim2.new(0, 170, 1, 0)
+sidebar.Size = UDim2.new(0, 190, 1, 0)
 sidebar.BackgroundColor3 = uiTheme.Dark.card
 sidebar.BorderSizePixel = 0
 sidebar.ZIndex = 2
@@ -389,6 +389,16 @@ local function createTab(name, iconText, layoutOrder)
 	stroke.Thickness = 1
 	stroke.Color = uiTheme.Dark.border
 	stroke.Parent = tab
+
+	table.insert(activeConnections, tab.MouseEnter:Connect(function()
+		TweenService:Create(tab, TweenInfo.new(0.2), {BackgroundTransparency = 0.92}):Play()
+	end))
+	table.insert(activeConnections, tab.MouseLeave:Connect(function()
+		local activeTab = homePanel.Visible and "Home" or (scriptsPanel.Visible and "Scripts" or "Settings")
+		if activeTab ~= name then
+			TweenService:Create(tab, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
+		end
+	end))
 
 	local iconLabel = Instance.new("TextLabel")
 	iconLabel.Name = "Icon"
@@ -479,8 +489,8 @@ end)
 
 local header = Instance.new("Frame")
 header.Name = "Header"
-header.Size = UDim2.new(1, -170, 0, 50)
-header.Position = UDim2.new(0, 170, 0, 0)
+header.Size = UDim2.new(1, -190, 0, 50)
+header.Position = UDim2.new(0, 190, 0, 0)
 header.BackgroundTransparency = 1
 header.ZIndex = 2
 header.Parent = mainFrame
@@ -517,7 +527,7 @@ local btnClose = Instance.new("TextButton")
 btnClose.Name = "btnClose"
 btnClose.Size = UDim2.new(0, 32, 0, 32)
 btnClose.BackgroundColor3 = uiTheme.Dark.card
-btnClose.Text = "✕"
+btnClose.Text = "X"
 btnClose.TextColor3 = Color3.fromRGB(240, 70, 70)
 btnClose.Font = Enum.Font.GothamBold
 btnClose.TextSize = 14
@@ -596,8 +606,8 @@ hsvIndicatorStroke.Parent = hsvIndicator
 
 local workspaceContainer = Instance.new("Frame")
 workspaceContainer.Name = "WorkspaceContainer"
-workspaceContainer.Size = UDim2.new(1, -190, 1, -70)
-workspaceContainer.Position = UDim2.new(0, 190, 0, 60)
+workspaceContainer.Size = UDim2.new(1, -210, 1, -70)
+workspaceContainer.Position = UDim2.new(0, 210, 0, 60)
 workspaceContainer.BackgroundTransparency = 1
 workspaceContainer.ZIndex = 2
 workspaceContainer.Parent = mainFrame
@@ -742,7 +752,7 @@ settingsTitle.Parent = settingsPanel
 
 local settingsDesc = Instance.new("TextLabel")
 settingsDesc.Name = "SettingsDesc"
-settingsDesc.Size = UDim2.new(1, 0, 0, 40)
+settingsDesc.Size = UDim2.new(1, -160, 0, 40)
 settingsDesc.Position = UDim2.new(0, 0, 0, 35)
 settingsDesc.BackgroundTransparency = 1
 settingsDesc.Text = "Configure the visual preferences and shell execution modes of NekoLib."
@@ -752,6 +762,298 @@ settingsDesc.TextSize = 13
 settingsDesc.TextXAlignment = Enum.TextXAlignment.Left
 settingsDesc.ZIndex = 4
 settingsDesc.Parent = settingsPanel
+
+local settingsScroll = Instance.new("ScrollingFrame")
+settingsScroll.Name = "SettingsScroll"
+settingsScroll.Size = UDim2.new(1, 0, 1, -80)
+settingsScroll.Position = UDim2.new(0, 0, 0, 80)
+settingsScroll.BackgroundTransparency = 1
+settingsScroll.BorderSizePixel = 0
+settingsScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+settingsScroll.ScrollBarThickness = 4
+settingsScroll.ScrollBarImageColor3 = uiTheme.Dark.border
+settingsScroll.ZIndex = 4
+settingsScroll.Parent = settingsPanel
+
+local settingsLayout = Instance.new("UIListLayout")
+settingsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+settingsLayout.Padding = UDim.new(0, 10)
+settingsLayout.Parent = settingsScroll
+
+table.insert(activeConnections, settingsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	settingsScroll.CanvasSize = UDim2.new(0, 0, 0, settingsLayout.AbsoluteContentSize.Y + 10)
+end))
+
+local currentSettings = {
+	GuiScale = 1,
+	Blur = false,
+	Transparency = 0,
+	Font = "Gotham",
+	FontSize = 14
+}
+
+local function applyGuiScale(scale)
+	currentSettings.GuiScale = scale
+	mainFrame.Size = UDim2.new(0, 720 * scale, 0, 480 * scale)
+	mainFrame.Position = UDim2.new(0.5, -360 * scale, 0.5, -240 * scale)
+end
+
+local function applyBlur(enabled)
+	currentSettings.Blur = enabled
+	local lighting = game:GetService("Lighting")
+	local blur = lighting:FindFirstChild("NekoBlur")
+	if enabled then
+		if not blur then
+			blur = Instance.new("BlurEffect")
+			blur.Name = "NekoBlur"
+			blur.Size = 10
+			blur.Parent = lighting
+		end
+	else
+		if blur then blur:Destroy() end
+	end
+end
+
+local function applyTransparency(value)
+	currentSettings.Transparency = value
+	mainFrame.BackgroundTransparency = value
+	sidebar.BackgroundTransparency = value
+end
+
+local function applyFontAndSize(fontName, size)
+	currentSettings.Font = fontName
+	currentSettings.FontSize = size
+	local fontEnum = Enum.Font[fontName] or Enum.Font.Gotham
+	for _, desc in ipairs(mainFrame:GetDescendants()) do
+		if desc:IsA("TextLabel") or desc:IsA("TextBox") or desc:IsA("TextButton") then
+			desc.Font = fontEnum
+		end
+	end
+end
+
+local HttpService = game:GetService("HttpService")
+
+local function saveSettings()
+	local json = HttpService:JSONEncode(currentSettings)
+	local filename = "NekoLib_" .. tostring(localPlayer.UserId) .. ".json"
+	if writefile then
+		writefile(filename, json)
+	else
+		print("Settings Mock Saved:", json)
+	end
+end
+
+local function loadSettings()
+	local filename = "NekoLib_" .. tostring(localPlayer.UserId) .. ".json"
+	if readfile and isfile and isfile(filename) then
+		local success, data = pcall(function()
+			return HttpService:JSONDecode(readfile(filename))
+		end)
+		if success and type(data) == "table" then
+			for k, v in pairs(data) do
+				currentSettings[k] = v
+			end
+			applyGuiScale(currentSettings.GuiScale)
+			applyBlur(currentSettings.Blur)
+			applyTransparency(currentSettings.Transparency)
+			applyFontAndSize(currentSettings.Font, currentSettings.FontSize)
+		end
+	end
+end
+
+task.spawn(loadSettings)
+
+local function createSettingItem(name, desc)
+	local item = Instance.new("Frame")
+	item.Name = "OpaqueFrame"
+	item.Size = UDim2.new(1, -10, 0, 60)
+	item.BackgroundColor3 = uiTheme.Dark.card
+	item.ZIndex = 5
+	item.Parent = settingsScroll
+
+	local itemCorner = Instance.new("UICorner")
+	itemCorner.CornerRadius = UDim.new(0, 8)
+	itemCorner.Parent = item
+
+	local itemStroke = Instance.new("UIStroke")
+	itemStroke.Thickness = 1
+	itemStroke.Color = uiTheme.Dark.border
+	itemStroke.Parent = item
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "TitleLabel"
+	titleLabel.Size = UDim2.new(0.6, 0, 0, 25)
+	titleLabel.Position = UDim2.new(0, 12, 0, 8)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = name
+	titleLabel.TextColor3 = uiTheme.Dark.text
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 14
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.ZIndex = 6
+	titleLabel.Parent = item
+
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Name = "DescLabel"
+	descLabel.Size = UDim2.new(0.6, 0, 0, 20)
+	descLabel.Position = UDim2.new(0, 12, 0, 30)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Text = desc
+	descLabel.TextColor3 = uiTheme.Dark.subText
+	descLabel.Font = Enum.Font.Gotham
+	descLabel.TextSize = 11
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.ZIndex = 6
+	descLabel.Parent = item
+
+	return item
+end
+
+local scaleItem = createSettingItem("GUI Scale", "Resize the dashboard interface.")
+local scaleBtn = Instance.new("TextButton")
+scaleBtn.Name = "OpaqueButton"
+scaleBtn.Size = UDim2.new(0, 100, 0, 30)
+scaleBtn.Position = UDim2.new(1, -112, 0.5, -15)
+scaleBtn.BackgroundColor3 = getAccentColor()
+scaleBtn.Text = "x" .. tostring(currentSettings.GuiScale)
+scaleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+scaleBtn.Font = Enum.Font.GothamBold
+scaleBtn.TextSize = 12
+scaleBtn.ZIndex = 6
+scaleBtn.Parent = scaleItem
+
+local scaleBtnCorner = Instance.new("UICorner")
+scaleBtnCorner.CornerRadius = UDim.new(0, 6)
+scaleBtnCorner.Parent = scaleBtn
+
+local scales = {1, 1.25, 1.5, 2}
+table.insert(activeConnections, scaleBtn.MouseButton1Click:Connect(function()
+	local idx = table.find(scales, currentSettings.GuiScale) or 1
+	local nextIdx = (idx % #scales) + 1
+	local nextScale = scales[nextIdx]
+	applyGuiScale(nextScale)
+	scaleBtn.Text = "x" .. tostring(nextScale)
+end))
+
+local blurItem = createSettingItem("Depth Blur", "Toggles cinematic camera blur.")
+local blurBtn = Instance.new("TextButton")
+blurBtn.Name = "OpaqueButton"
+blurBtn.Size = UDim2.new(0, 100, 0, 30)
+blurBtn.Position = UDim2.new(1, -112, 0.5, -15)
+blurBtn.BackgroundColor3 = currentSettings.Blur and getAccentColor() or Color3.fromRGB(40, 40, 45)
+blurBtn.Text = currentSettings.Blur and "ON" or "OFF"
+blurBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+blurBtn.Font = Enum.Font.GothamBold
+blurBtn.TextSize = 12
+blurBtn.ZIndex = 6
+blurBtn.Parent = blurItem
+
+local blurBtnCorner = Instance.new("UICorner")
+blurBtnCorner.CornerRadius = UDim.new(0, 6)
+blurBtnCorner.Parent = blurBtn
+
+table.insert(activeConnections, blurBtn.MouseButton1Click:Connect(function()
+	local targetState = not currentSettings.Blur
+	applyBlur(targetState)
+	blurBtn.Text = targetState and "ON" or "OFF"
+	blurBtn.BackgroundColor3 = targetState and getAccentColor() or Color3.fromRGB(40, 40, 45)
+end))
+
+local transItem = createSettingItem("Transparency", "Set layout background glass effect.")
+local transBtn = Instance.new("TextButton")
+transBtn.Name = "OpaqueButton"
+transBtn.Size = UDim2.new(0, 100, 0, 30)
+transBtn.Position = UDim2.new(1, -112, 0.5, -15)
+transBtn.BackgroundColor3 = getAccentColor()
+transBtn.Text = tostring(math.floor(currentSettings.Transparency * 100)) .. "%"
+transBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+transBtn.Font = Enum.Font.GothamBold
+transBtn.TextSize = 12
+transBtn.ZIndex = 6
+transBtn.Parent = transItem
+
+local transBtnCorner = Instance.new("UICorner")
+transBtnCorner.CornerRadius = UDim.new(0, 6)
+transBtnCorner.Parent = transBtn
+
+local transOptions = {0, 0.15, 0.3, 0.5}
+table.insert(activeConnections, transBtn.MouseButton1Click:Connect(function()
+	local idx = table.find(transOptions, currentSettings.Transparency) or 1
+	local nextIdx = (idx % #transOptions) + 1
+	local nextTrans = transOptions[nextIdx]
+	applyTransparency(nextTrans)
+	transBtn.Text = tostring(math.floor(nextTrans * 100)) .. "%"
+end))
+
+local fontItem = createSettingItem("UI Font Style", "Switch between dashboard typeface configurations.")
+local fontBtn = Instance.new("TextButton")
+fontBtn.Name = "OpaqueButton"
+fontBtn.Size = UDim2.new(0, 100, 0, 30)
+fontBtn.Position = UDim2.new(1, -112, 0.5, -15)
+fontBtn.BackgroundColor3 = getAccentColor()
+fontBtn.Text = currentSettings.Font
+fontBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+fontBtn.Font = Enum.Font.GothamBold
+fontBtn.TextSize = 11
+fontBtn.ZIndex = 6
+fontBtn.Parent = fontItem
+
+local fontBtnCorner = Instance.new("UICorner")
+fontBtnCorner.CornerRadius = UDim.new(0, 6)
+fontBtnCorner.Parent = fontBtn
+
+local fonts = {"Gotham", "Arial", "Code"}
+table.insert(activeConnections, fontBtn.MouseButton1Click:Connect(function()
+	local idx = table.find(fonts, currentSettings.Font) or 1
+	local nextIdx = (idx % #fonts) + 1
+	local nextFont = fonts[nextIdx]
+	applyFontAndSize(nextFont, currentSettings.FontSize)
+	fontBtn.Text = nextFont
+end))
+
+local fontSizeItem = createSettingItem("Text Size", "Modify text size offset slightly.")
+local fontSizeBtn = Instance.new("TextButton")
+fontSizeBtn.Name = "OpaqueButton"
+fontSizeBtn.Size = UDim2.new(0, 100, 0, 30)
+fontSizeBtn.Position = UDim2.new(1, -112, 0.5, -15)
+fontSizeBtn.BackgroundColor3 = getAccentColor()
+fontSizeBtn.Text = tostring(currentSettings.FontSize) .. " px"
+fontSizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+fontSizeBtn.Font = Enum.Font.GothamBold
+fontSizeBtn.TextSize = 12
+fontSizeBtn.ZIndex = 6
+fontSizeBtn.Parent = fontSizeItem
+
+local fontSizeBtnCorner = Instance.new("UICorner")
+fontSizeBtnCorner.CornerRadius = UDim.new(0, 6)
+fontSizeBtnCorner.Parent = fontSizeBtn
+
+local sizes = {12, 14, 16}
+table.insert(activeConnections, fontSizeBtn.MouseButton1Click:Connect(function()
+	local idx = table.find(sizes, currentSettings.FontSize) or 2
+	local nextIdx = (idx % #sizes) + 1
+	local nextSize = sizes[nextIdx]
+	applyFontAndSize(currentSettings.Font, nextSize)
+	fontSizeBtn.Text = tostring(nextSize) .. " px"
+end))
+
+local saveBtn = Instance.new("TextButton")
+saveBtn.Name = "OpaqueButton"
+saveBtn.Size = UDim2.new(0, 150, 0, 36)
+saveBtn.Position = UDim2.new(1, -160, 0, 35)
+saveBtn.BackgroundColor3 = getAccentColor()
+saveBtn.Text = "Save Settings"
+saveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+saveBtn.Font = Enum.Font.GothamBold
+saveBtn.TextSize = 13
+saveBtn.ZIndex = 6
+saveBtn.Parent = settingsPanel
+
+local saveBtnCorner = Instance.new("UICorner")
+saveBtnCorner.CornerRadius = UDim.new(0, 8)
+saveBtnCorner.Parent = saveBtn
+
+table.insert(activeConnections, saveBtn.MouseButton1Click:Connect(saveSettings))
 
 local function switchTab(tabName)
 	homePanel.Visible = (tabName == "Home")
@@ -763,40 +1065,15 @@ local function switchTab(tabName)
 		local stroke = btn:FindFirstChildOfClass("UIStroke")
 		if stroke then
 			if name == tabName then
-				stroke.Color = getAccentColor()
+				TweenService:Create(stroke, TweenInfo.new(0.2), {Color = getAccentColor(), Thickness = 2}):Play()
+				TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 0.9}):Play()
 			else
-				stroke.Color = uiTheme[uiTheme.Current].border
+				TweenService:Create(stroke, TweenInfo.new(0.2), {Color = uiTheme[uiTheme.Current].border, Thickness = 1}):Play()
+				TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundTransparency = 1}):Play()
 			end
 		end
 	end
 end
-
-local welcomeText = Instance.new("TextLabel")
-welcomeText.Name = "WelcomeText"
-welcomeText.Size = UDim2.new(1, 0, 0, 30)
-welcomeText.BackgroundTransparency = 1
-welcomeText.Text = "Welcome to NekoLib Premium"
-welcomeText.TextColor3 = uiTheme.Dark.text
-welcomeText.Font = Enum.Font.GothamBold
-welcomeText.TextSize = 20
-welcomeText.ZIndex = 4
-welcomeText.TextXAlignment = Enum.TextXAlignment.Left
-welcomeText.Parent = homePanel
-
-local descText = Instance.new("TextLabel")
-descText.Name = "DescText"
-descText.Size = UDim2.new(1, 0, 0, 80)
-descText.Position = UDim2.new(0, 0, 0, 35)
-descText.BackgroundTransparency = 1
-descText.Text = "You have unlocked the runtime workspace successfully. Full access has been granted. Enjoy constructing scripts inside our high-performance UI shell framework."
-descText.TextColor3 = uiTheme.Dark.subText
-descText.Font = Enum.Font.Gotham
-descText.TextSize = 13
-descText.TextWrapped = true
-descText.ZIndex = 4
-descText.TextXAlignment = Enum.TextXAlignment.Left
-descText.TextYAlignment = Enum.TextYAlignment.Top
-descText.Parent = homePanel
 
 local function dragLogic()
 	local dragging = false
@@ -849,8 +1126,8 @@ local function applyAccentUpdates()
 		if stroke then stroke.Color = getAccentColor() end
 	end
 
-	for _, desc in ipairs(scriptsScroll:GetDescendants()) do
-		if desc:IsA("TextButton") and desc.Name == "OpaqueButton" then
+	for _, desc in ipairs(mainFrame:GetDescendants()) do
+		if desc:IsA("TextButton") and desc.Name == "OpaqueButton" and desc ~= blurBtn then
 			desc.BackgroundColor3 = getAccentColor()
 		end
 	end
