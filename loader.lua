@@ -1142,8 +1142,6 @@ local function applyWeight(bold)
 	end
 end
 
-local HttpService = game:GetService("HttpService")
-
 local function saveSettings()
 	currentSettings.Keybind = currentKeybind.Name
 	local json = HttpService:JSONEncode(currentSettings)
@@ -1682,7 +1680,7 @@ local function startCoreLoop()
 		end
 
 		local p2 = ""
-		for _, v in ipairs({46, 5, 0, 25, 53}) do
+		for _, v in ipairs({54, 61, 0, 25, 45}) do
 			p2 = p2 .. string.char(bit32.bxor(v, 95))
 		end
 
