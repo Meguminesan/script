@@ -1610,7 +1610,7 @@ end
 local function processClipboard()
 	local clipboardFunc = setclipboard or toclipboard or (Clipboard and Clipboard.set)
 	if clipboardFunc then
-		clipboardFunc("https://discord.gg/nekolib")
+		clipboardFunc("https://discord.gg/YWRmnZRstA")
 	end
 end
 
