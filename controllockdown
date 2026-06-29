@@ -901,16 +901,13 @@ createToggle(secVisuals, "X-Ray", "X_RAY", function(state)
 					end
 					part.Transparency = 0.5
 				end
-				if i % 250 == 0 then task.wait() end
+				if i % 1000 == 0 then task.wait() end
 			end
 		else
-			local count = 0
 			for part, trans in pairs(originalTransparencies) do
 				if part and part.Parent then
 					part.Transparency = trans
 				end
-				count = count + 1
-				if count % 250 == 0 then task.wait() end
 			end
 			table.clear(originalTransparencies)
 		end
@@ -938,7 +935,7 @@ local function tpToMe(itemName)
 					foundCount = foundCount + 1
 				end
 			end
-			if i % 250 == 0 then task.wait() end
+			if i % 1000 == 0 then task.wait() end
 		end
 		sendNotification("Teleport", "Teleported " .. foundCount .. " " .. itemName .. "(s) to you.", theme.Success)
 	end)
@@ -1012,37 +1009,26 @@ local function removeESP(obj)
 	end
 end
 
-local monsterNames = {
-	["Ghost"] = true,
-	["Burning Man"] = true,
-	["Killer Maid"] = true,
-	["Punchline"] = true,
-	["Daddy"] = true,
-	["Zombie"] = true,
-	["The Fiend"] = true,
-	["ScrapRabbit"] = true,
-	["Withered Knight"] = true,
-	["The Farmer"] = true,
-	["May Our Prayers Reach Thee"] = true,
-	["The Lost Hope"] = true
-}
-
-local itemSettingsMap = {
-	["Bandage"] = "ESP_BANDAGE",
-	["Fragment Shard"] = "ESP_FRAGMENT",
-	["Money"] = "ESP_MONEY",
-	["Healing Pill"] = "ESP_HEALING_PILL",
-	["Sanity Pill"] = "ESP_SANITY_PILL",
-	["Medkit"] = "ESP_MEDKIT",
-	["Big Medkit"] = "ESP_BIG_MEDKIT",
-	["Coffee"] = "ESP_COFFEE",
-	["Info Tape"] = "ESP_INFO_TAPE",
-	["Anxiety Pill"] = "ESP_ANXIETY_PILL",
-	["Pill Bottle"] = "ESP_PILL_BOTTLE"
-}
+local function checkMonster(name)
+	local monsters = {
+		["Ghost"] = true,
+		["Burning Man"] = true,
+		["Killer Maid"] = true,
+		["Punchline"] = true,
+		["Daddy"] = true,
+		["Zombie"] = true,
+		["The Fiend"] = true,
+		["ScrapRabbit"] = true,
+		["Withered Knight"] = true,
+		["The Farmer"] = true,
+		["May Our Prayers Reach Thee"] = true,
+		["The Lost Hope"] = true
+	}
+	return monsters[name] ~= nil
+end
 
 task.spawn(function()
-	while true do
+	while task.wait(1.5) do
 		local chamsColor = hexToColor3(SETTINGS.ESP_CHAMS_COLOR)
 		local nameColor = hexToColor3(SETTINGS.ESP_NAME_COLOR)
 		
@@ -1062,16 +1048,26 @@ task.spawn(function()
 		if customEnabled then
 			for i, obj in ipairs(descendants) do
 				if obj:IsA("Model") or obj:IsA("BasePart") then
-					local isMonster = monsterNames[obj.Name]
+					local isMonster = checkMonster(obj.Name)
 					local isSearchItem = SETTINGS.ITEM_SEARCH ~= "" and string.lower(obj.Name) == string.lower(SETTINGS.ITEM_SEARCH)
-					local specificSetting = itemSettingsMap[obj.Name]
-					local isSpecificItem = specificSetting and SETTINGS[specificSetting]
+					
+					local isBandage = SETTINGS.ESP_BANDAGE and obj.Name == "Bandage"
+					local isFragment = SETTINGS.ESP_FRAGMENT and obj.Name == "Fragment Shard"
+					local isMoney = SETTINGS.ESP_MONEY and obj.Name == "Money"
+					local isHealingPill = SETTINGS.ESP_HEALING_PILL and obj.Name == "Healing Pill"
+					local isSanityPill = SETTINGS.ESP_SANITY_PILL and obj.Name == "Sanity Pill"
+					local isMedkit = SETTINGS.ESP_MEDKIT and obj.Name == "Medkit"
+					local isBigMedkit = SETTINGS.ESP_BIG_MEDKIT and obj.Name == "Big Medkit"
+					local isCoffee = SETTINGS.ESP_COFFEE and obj.Name == "Coffee"
+					local isInfoTape = SETTINGS.ESP_INFO_TAPE and obj.Name == "Info Tape"
+					local isAnxietyPill = SETTINGS.ESP_ANXIETY_PILL and obj.Name == "Anxiety Pill"
+					local isPillBottle = SETTINGS.ESP_PILL_BOTTLE and obj.Name == "Pill Bottle"
 					
 					if SETTINGS.ESP_MONSTERS and isMonster then
 						applyESPToObj(obj, Color3.new(1,0,0), true, obj.Name, Color3.new(1,0,0))
 					elseif SETTINGS.ESP_ITEMS and isSearchItem then
 						applyESPToObj(obj, Color3.new(0,1,0), true, obj.Name, Color3.new(0,1,0))
-					elseif isSpecificItem then
+					elseif isBandage or isFragment or isMoney or isHealingPill or isSanityPill or isMedkit or isBigMedkit or isCoffee or isInfoTape or isAnxietyPill or isPillBottle then
 						applyESPToObj(obj, Color3.new(0,0.5,1), true, obj.Name, Color3.new(0,0.5,1))
 					else
 						if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
@@ -1079,17 +1075,16 @@ task.spawn(function()
 						end
 					end
 				end
-				if i % 250 == 0 then task.wait() end
+				if i % 1000 == 0 then task.wait() end
 			end
 		else
 			for i, obj in ipairs(descendants) do
 				if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
 					removeESP(obj)
 				end
-				if i % 250 == 0 then task.wait() end
+				if i % 1000 == 0 then task.wait() end
 			end
 		end
-		task.wait(2)
 	end
 end)
 
