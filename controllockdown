@@ -454,7 +454,6 @@ local function createTab(name, iconId)
 	page.Size = UDim2.new(1, 0, 1, 0)
 	page.BackgroundTransparency = 1
 	page.BorderSizePixel = 0
-	page.PageNavigationMode = Enum.PageNavigationMode.Standard
 	page.ScrollBarThickness = 4
 	page.ScrollBarImageColor3 = theme.ItemBG
 	page.Visible = false
