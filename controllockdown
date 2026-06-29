@@ -965,17 +965,22 @@ local function hexToColor3(hex)
 end
 
 local function applyESPToObj(obj, color, useChams, nameText, nameColor)
-	local hl = obj:FindFirstChild("NK_Highlight")
-	if not hl then
-		hl = Instance.new("Highlight")
-		hl.Name = "NK_Highlight"
-		hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-		hl.Parent = obj
+	if useChams then
+		local hl = obj:FindFirstChild("NK_Highlight")
+		if not hl then
+			hl = Instance.new("Highlight")
+			hl.Name = "NK_Highlight"
+			hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+			hl.Parent = obj
+		end
+		hl.FillColor = color
+		hl.OutlineColor = Color3.new(1,1,1)
+		hl.FillTransparency = 0.4
+		hl.OutlineTransparency = 0
+	else
+		local hl = obj:FindFirstChild("NK_Highlight")
+		if hl then hl:Destroy() end
 	end
-	hl.FillColor = color
-	hl.OutlineColor = Color3.new(1,1,1)
-	hl.FillTransparency = useChams and 0.4 or 1
-	hl.OutlineTransparency = 0
 	
 	if nameText then
 		local head = obj:FindFirstChild("Head") or obj:FindFirstChildWhichIsA("BasePart")
@@ -1041,17 +1046,31 @@ local itemSettingsMap = {
 	["Pill Bottle"] = "ESP_PILL_BOTTLE"
 }
 
+local activeESPObjects = {}
+
 task.spawn(function()
 	while true do
 		local chamsColor = hexToColor3(SETTINGS.ESP_CHAMS_COLOR)
 		local nameColor = hexToColor3(SETTINGS.ESP_NAME_COLOR)
 		
+		local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local myPos = myRoot and myRoot.Position or Vector3.new(0, 0, 0)
+		
+		local targets = {}
+		
 		for _, p in ipairs(Players:GetPlayers()) do
 			if p ~= player and p.Character then
 				if SETTINGS.ESP_PLAYERS then
-					applyESPToObj(p.Character, chamsColor, SETTINGS.ESP_CHAMS, p.Name, nameColor)
-				else
-					removeESP(p.Character)
+					local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+					local dist = hrp and (hrp.Position - myPos).Magnitude or 99999
+					table.insert(targets, {
+						Object = p.Character,
+						Color = chamsColor,
+						UseChams = SETTINGS.ESP_CHAMS,
+						NameText = p.Name,
+						NameColor = nameColor,
+						Distance = dist
+					})
 				end
 			end
 		end
@@ -1068,28 +1087,70 @@ task.spawn(function()
 					local isSpecificItem = specificSetting and SETTINGS[specificSetting]
 					
 					if SETTINGS.ESP_MONSTERS and isMonster then
-						applyESPToObj(obj, Color3.new(1,0,0), true, obj.Name, Color3.new(1,0,0))
+						local mainPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+						local dist = mainPart and (mainPart.Position - myPos).Magnitude or 99999
+						table.insert(targets, {
+							Object = obj,
+							Color = Color3.new(1, 0, 0),
+							UseChams = true,
+							NameText = obj.Name,
+							NameColor = Color3.new(1, 0, 0),
+							Distance = dist
+						})
 					elseif SETTINGS.ESP_ITEMS and isSearchItem then
-						applyESPToObj(obj, Color3.new(0,1,0), true, obj.Name, Color3.new(0,1,0))
+						local mainPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+						local dist = mainPart and (mainPart.Position - myPos).Magnitude or 99999
+						table.insert(targets, {
+							Object = obj,
+							Color = Color3.new(0, 1, 0),
+							UseChams = true,
+							NameText = obj.Name,
+							NameColor = Color3.new(0, 1, 0),
+							Distance = dist
+						})
 					elseif isSpecificItem then
-						applyESPToObj(obj, Color3.new(0,0.5,1), true, obj.Name, Color3.new(0,0.5,1))
-					else
-						if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
-							removeESP(obj)
-						end
+						local mainPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")) or obj
+						local dist = mainPart and (mainPart.Position - myPos).Magnitude or 99999
+						table.insert(targets, {
+							Object = obj,
+							Color = Color3.new(0, 0.5, 1),
+							UseChams = true,
+							NameText = obj.Name,
+							NameColor = Color3.new(0, 0.5, 1),
+							Distance = dist
+						})
 					end
 				end
 				if i % 250 == 0 then task.wait() end
 			end
-		else
-			for i, obj in ipairs(descendants) do
-				if obj:FindFirstChild("NK_Highlight") and not Players:GetPlayerFromCharacter(obj) then
-					removeESP(obj)
-				end
-				if i % 250 == 0 then task.wait() end
+		end
+		
+		table.sort(targets, function(a, b)
+			return a.Distance < b.Distance
+		end)
+		
+		local oldESPObjects = activeESPObjects
+		activeESPObjects = {}
+		
+		local highlightCount = 0
+		local maxHighlights = 24
+		
+		for _, t in ipairs(targets) do
+			activeESPObjects[t.Object] = true
+			local allowHighlight = (highlightCount < maxHighlights) and t.UseChams
+			if allowHighlight then
+				highlightCount = highlightCount + 1
+			end
+			applyESPToObj(t.Object, t.Color, allowHighlight, t.NameText, t.NameColor)
+		end
+		
+		for oldObj, _ in pairs(oldESPObjects) do
+			if not activeESPObjects[oldObj] then
+				removeESP(oldObj)
 			end
 		end
-		task.wait(2)
+		
+		task.wait(1.5)
 	end
 end)
 
